@@ -1,0 +1,166 @@
+Rebuild the entire frontend UI of my payment aggregator dashboard (PayAgg Platform) from scratch with a clean, scalable, production-level design system.
+
+DO NOT PATCH EXISTING UI.
+CREATE A NEW CONSISTENT UI SYSTEM.
+
+---
+
+🎯 GOAL:
+Create a modern fintech dashboard UI similar to Razorpay / Stripe with:
+
+* Perfect alignment
+* No overflow issues
+* Fully responsive layout
+* Clean spacing system
+* Reusable components
+
+---
+
+🧱 TECH STACK:
+
+* Next.js (App Router)
+* Tailwind CSS
+* ShadCN UI (for components)
+* Lucide Icons
+* Framer Motion (for animations)
+
+---
+
+📐 GLOBAL LAYOUT SYSTEM (VERY IMPORTANT)
+
+Create a single root layout:
+
+Structure:
+
+<div class="flex min-h-screen bg-gray-50">
+
+  <!-- Sidebar -->
+
+  <aside class="w-64 hidden md:flex flex-col fixed h-full bg-white border-r z-50"></aside>
+
+  <!-- Main -->
+
+  <div class="flex-1 md:ml-64 flex flex-col">
+
+```
+<!-- Header -->
+<header class="h-16 bg-white border-b sticky top-0 z-40 flex items-center justify-between px-6"></header>
+
+<!-- Page Content -->
+<main class="flex-1 p-6 max-w-7xl mx-auto w-full">
+</main>
+```
+
+  </div>
+</div>
+
+---
+
+📱 RESPONSIVE BEHAVIOR
+
+* Sidebar hidden on mobile
+* Add toggle button (hamburger)
+* Content should take full width on small screens
+* No horizontal scroll
+
+---
+
+📦 DESIGN SYSTEM RULES
+
+1. Container:
+
+* Always use: max-w-7xl mx-auto px-4
+
+2. Spacing:
+
+* Use Tailwind spacing only (p-4, p-6, gap-4, gap-6)
+
+3. Cards:
+
+* rounded-2xl shadow-sm border bg-white p-5
+
+4. Grid:
+
+* grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6
+
+5. Tables:
+
+* Wrap in: overflow-x-auto
+* Clean modern table UI
+
+---
+
+📊 COMPONENTS TO BUILD
+
+1. Sidebar
+
+* Logo
+* Navigation items (Dashboard, Payments, Payouts, etc.)
+* Active state highlight
+
+2. Header
+
+* Search bar
+* Notifications
+* Profile dropdown
+
+3. Dashboard Page
+
+* Stats cards (Revenue, Transactions, Success Rate)
+* Charts section
+* Recent transactions table
+
+4. Payments Page
+
+* Filters (status, gateway, date)
+* Table with proper spacing and scroll
+
+5. Landing Page
+
+* Hero section centered
+* Features grid (3 columns)
+* Testimonials
+* CTA section
+
+---
+
+🎨 UI QUALITY REQUIREMENTS
+
+* No content touching screen edges
+* Everything centered
+* Consistent padding
+* Equal spacing everywhere
+* No broken layouts
+* No overflow issues
+* Looks like production SaaS dashboard
+
+---
+
+⚠️ STRICT RULES
+
+* DO NOT use width: 100vw
+* DO NOT use position: absolute for layout
+* DO NOT hardcode widths
+* DO NOT mix different layout styles
+
+---
+
+✨ ANIMATIONS
+
+* Smooth hover on cards
+* Sidebar transition
+* Button hover effects
+* Use Framer Motion minimally
+
+---
+
+🎯 FINAL OUTPUT
+
+* Clean, consistent UI across ALL pages
+* Fully responsive
+* Reusable component-based structure
+* Production-ready frontend
+
+---
+
+Think like a senior frontend engineer building a SaaS fintech dashboard UI.
