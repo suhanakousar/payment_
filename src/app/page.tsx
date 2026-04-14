@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import {
-  Zap, ArrowRight, CheckCircle2, BarChart3, ShieldCheck, Repeat2,
+  Zap, ArrowRight, BarChart3, ShieldCheck, Repeat2,
   Globe2, Sparkles, TrendingUp, CreditCard, Send, ChevronRight,
 } from 'lucide-react';
 
@@ -66,7 +66,7 @@ export default function HomePage() {
 
       {/* ── Navbar ───────────────────────────────────────────────── */}
       <nav
-        className="sticky top-0 z-50 h-16 flex items-center justify-between px-6 md:px-12"
+        className="sticky top-0 z-50 w-full"
         style={{
           background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(20px)',
@@ -74,71 +74,73 @@ export default function HomePage() {
           borderBottom: '1px solid rgba(99,102,241,0.08)',
         }}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-              boxShadow: '0 0 16px rgba(99,102,241,0.4)',
-            }}
-          >
-            <Zap size={16} className="text-white" strokeWidth={2.5} />
-          </div>
-          <div>
-            <span
-              className="font-extrabold text-base tracking-tight"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: 'linear-gradient(90deg, #4338CA, #6366F1, #8B5CF6)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                boxShadow: '0 0 16px rgba(99,102,241,0.4)',
               }}
             >
-              PayAgg
-            </span>
-            <span className="ml-2 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Platform</span>
+              <Zap size={16} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <span
+                className="font-extrabold text-base tracking-tight"
+                style={{
+                  background: 'linear-gradient(90deg, #4338CA, #6366F1, #8B5CF6)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                PayAgg
+              </span>
+              <span className="ml-2 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Platform</span>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-            style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #7C3AED 100%)',
-              boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
-            }}
-          >
-            Get started
-            <ArrowRight size={13} />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #6366F1 0%, #7C3AED 100%)',
+                boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
+              }}
+            >
+              Get started
+              <ArrowRight size={13} />
+            </Link>
+          </div>
         </div>
       </nav>
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="relative flex-1 flex flex-col items-center justify-center text-center px-6 py-20 md:py-28 overflow-hidden">
+      <section className="relative w-full py-20 md:py-28 overflow-hidden">
         {/* Background glow orbs */}
         <div className="absolute inset-0 pointer-events-none">
           <div
-            className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full"
+            className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full"
             style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)' }}
           />
           <div
-            className="absolute bottom-0 -left-32 w-80 h-80 rounded-full"
+            className="absolute bottom-0 -left-20 w-72 h-72 rounded-full"
             style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)' }}
           />
           <div
-            className="absolute bottom-0 -right-32 w-80 h-80 rounded-full"
+            className="absolute bottom-0 -right-20 w-72 h-72 rounded-full"
             style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)' }}
           />
         </div>
 
-        <div className="relative max-w-3xl mx-auto">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -164,7 +166,7 @@ export default function HomePage() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
             <Link
               href="/login"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-base font-bold text-white transition-all"
@@ -187,8 +189,8 @@ export default function HomePage() {
           </div>
 
           {/* Gateway logos row */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-            <span className="text-xs text-slate-400 mr-2">Integrates with</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs text-slate-400 mr-1">Integrates with</span>
             {gateways.map((g) => (
               <span
                 key={g}
@@ -204,29 +206,30 @@ export default function HomePage() {
 
       {/* ── Stats Banner ─────────────────────────────────────────── */}
       <section
-        className="py-10 px-6"
+        className="w-full py-10"
         style={{
           background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 40%, #7C3AED 100%)',
         }}
       >
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-3xl font-extrabold text-white tabular-nums">{s.value}</p>
-              <p className="text-sm text-indigo-200 mt-1">{s.label}</p>
-            </div>
-          ))}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {stats.map((s) => (
+              <div key={s.label}>
+                <p className="text-3xl font-extrabold text-white tabular-nums">{s.value}</p>
+                <p className="text-sm text-indigo-200 mt-1">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── Features Grid ────────────────────────────────────────── */}
-      <section className="py-20 px-6 md:px-12">
-        <div className="max-w-5xl mx-auto">
+      <section className="w-full py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Everything you need to
+              Everything you need to{' '}
               <span
-                className="ml-2"
                 style={{
                   background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
                   WebkitBackgroundClip: 'text',
@@ -241,7 +244,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f) => (
               <div
                 key={f.title}
@@ -263,28 +266,30 @@ export default function HomePage() {
       </section>
 
       {/* ── Social Proof ─────────────────────────────────────────── */}
-      <section className="py-12 px-6 md:px-12" style={{ background: '#EEF2FF' }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="flex justify-center gap-0.5 mb-4">
-            {[...Array(5)].map((_, i) => (
-              <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            ))}
-          </div>
-          <blockquote className="text-xl font-semibold text-slate-800 leading-relaxed">
-            &ldquo;PayAgg cut our payment failures by 34% in the first month. The smart routing is genuinely impressive.&rdquo;
-          </blockquote>
-          <div className="mt-5 flex items-center justify-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}
-            >
-              SK
+      <section className="w-full py-14" style={{ background: '#EEF2FF' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="flex justify-center gap-0.5 mb-4">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
             </div>
-            <div className="text-left">
-              <p className="text-sm font-bold text-slate-800">Sarah Kim</p>
-              <p className="text-xs text-slate-500">CTO, Veloce Commerce</p>
+            <blockquote className="text-xl font-semibold text-slate-800 leading-relaxed">
+              &ldquo;PayAgg cut our payment failures by 34% in the first month. The smart routing is genuinely impressive.&rdquo;
+            </blockquote>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}
+              >
+                SK
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-slate-800">Sarah Kim</p>
+                <p className="text-xs text-slate-500">CTO, Veloce Commerce</p>
+              </div>
             </div>
           </div>
         </div>
@@ -292,17 +297,17 @@ export default function HomePage() {
 
       {/* ── CTA Banner ───────────────────────────────────────────── */}
       <section
-        className="py-16 px-6 text-center"
+        className="w-full py-16 text-center"
         style={{
           background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 50%, #7C3AED 100%)',
         }}
       >
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <TrendingUp size={36} className="text-indigo-300 mx-auto mb-4" />
           <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
             Ready to supercharge your payments?
           </h2>
-          <p className="text-indigo-200 text-base mb-8">
+          <p className="text-indigo-200 text-base mb-8 max-w-lg mx-auto">
             Join hundreds of businesses already using PayAgg to maximise revenue.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -327,19 +332,26 @@ export default function HomePage() {
 
       {/* ── Footer ───────────────────────────────────────────────── */}
       <footer
-        className="py-8 px-6 text-center text-xs text-slate-400"
+        className="w-full py-8"
         style={{ borderTop: '1px solid rgba(99,102,241,0.08)', background: 'white' }}
       >
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div
-            className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5)' }}
-          >
-            <Zap size={12} className="text-white" strokeWidth={2.5} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-400">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div
+              className="w-6 h-6 rounded-lg flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5)' }}
+            >
+              <Zap size={12} className="text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-slate-700 text-sm">PayAgg</span>
           </div>
-          <span className="font-bold text-slate-700 text-sm">PayAgg</span>
+          <p suppressHydrationWarning>
+            © {new Date().getFullYear()} PayAgg Inc. · All rights reserved ·{' '}
+            <Link href="/login" className="text-indigo-500 hover:underline">Privacy</Link>
+            {' · '}
+            <Link href="/login" className="text-indigo-500 hover:underline">Terms</Link>
+          </p>
         </div>
-        <p>© {new Date().getFullYear()} PayAgg Inc. · All rights reserved · <Link href="/login" className="text-indigo-500 hover:underline">Privacy</Link> · <Link href="/login" className="text-indigo-500 hover:underline">Terms</Link></p>
       </footer>
     </div>
   );

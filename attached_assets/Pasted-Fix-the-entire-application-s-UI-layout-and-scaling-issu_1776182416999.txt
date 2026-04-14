@@ -1,0 +1,144 @@
+Fix the entire application's UI layout and scaling issues globally. The problem affects all pages including landing page, dashboard, payments, and all internal views.
+
+GOAL:
+Ensure consistent width, proper alignment, no overflow, and responsive behavior across the entire application.
+
+---
+
+1. GLOBAL RESET (MANDATORY)
+
+Apply this globally:
+
+* {
+  box-sizing: border-box;
+  }
+
+html, body {
+margin: 0;
+padding: 0;
+overflow-x: hidden;
+}
+
+---
+
+2. MAIN CONTAINER SYSTEM (CRITICAL FIX)
+
+Wrap ALL page content inside a centered container:
+
+.container {
+max-width: 1280px;
+margin: 0 auto;
+padding: 0 16px;
+width: 100%;
+}
+
+---
+
+3. DO NOT USE FULL WIDTH RANDOMLY
+
+REMOVE everywhere:
+
+* width: 100vw ❌
+* excessive w-full without container ❌
+
+REPLACE with:
+
+* width: 100%
+* inside .container
+
+---
+
+4. SECTION STRUCTURE (APPLY TO ALL PAGES)
+
+Each section must follow:
+
+<section class="section">
+  <div class="container">
+    <!-- content -->
+  </div>
+</section>
+
+.section {
+width: 100%;
+padding: 40px 0;
+}
+
+---
+
+5. CARD GRID FIX (LANDING + DASHBOARD)
+
+.cards {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+gap: 20px;
+}
+
+---
+
+6. TEXT OVERFLOW FIX
+
+h1, h2, p {
+max-width: 100%;
+word-wrap: break-word;
+}
+
+---
+
+7. HEADER FIX (LANDING PAGE)
+
+.header {
+width: 100%;
+}
+
+.header .container {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+---
+
+8. REMOVE THESE COMMON MISTAKES
+
+Search and REMOVE:
+
+* position: absolute (for layout blocks)
+* left: 0; right: 0; without container
+* width: 100vw
+* large fixed widths like 1400px
+
+---
+
+9. TAILWIND VERSION
+
+Use this everywhere:
+
+<div class="max-w-7xl mx-auto px-4 w-full">
+</div>
+
+Replace all:
+
+* w-full → only inside max-w container
+* px-0 → use px-4 or px-6
+
+---
+
+10. DEBUG CHECKLIST
+
+Fix these globally:
+
+* Content touching screen edges ❌
+* Cards cut from right ❌
+* Horizontal scroll ❌
+* Misaligned sections ❌
+* Uneven spacing ❌
+
+---
+
+FINAL RESULT:
+
+* All pages centered properly
+* Equal spacing left/right
+* No overflow
+* Clean UI like Razorpay/Stripe dashboards
+* Fully responsive

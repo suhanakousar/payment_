@@ -991,7 +991,7 @@ export default function PayoutsPage() {
   const failed = mockPayouts.filter((p) => p.status === 'FAILED' || p.status === 'PERMANENTLY_FAILED').length;
 
   return (
-    <div className="min-h-screen bg-slate-50/60 p-6 space-y-6">
+    <div className="p-6 space-y-6">
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>

@@ -14,7 +14,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar />
         <main
-          className="flex-1 overflow-y-auto p-6"
+          className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{
             background: 'linear-gradient(160deg, #EEF2FF 0%, #F0F4FF 40%, #EDF0FF 100%)',
           }}
