@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const settingsSections = [
   {
-    href: '/settings/profile',
+    href: '/dashboard/settings/profile',
     icon: User,
     title: 'Profile & Business',
     description: 'Manage your business details, KYC documents, and personal information.',
@@ -12,7 +12,7 @@ const settingsSections = [
     border: 'hover:border-indigo-200',
   },
   {
-    href: '/settings/bank',
+    href: '/dashboard/settings/bank',
     icon: Building2,
     title: 'Bank Account',
     description: 'Update your settlement bank account and configure payout schedules.',
@@ -20,7 +20,7 @@ const settingsSections = [
     border: 'hover:border-amber-200',
   },
   {
-    href: '/settings/webhooks',
+    href: '/dashboard/settings/webhooks',
     icon: Webhook,
     title: 'Webhooks',
     description: 'Configure webhook endpoints, event subscriptions, and view delivery logs.',
@@ -28,7 +28,7 @@ const settingsSections = [
     border: 'hover:border-violet-200',
   },
   {
-    href: '/settings/api-keys',
+    href: '/dashboard/settings/api-keys',
     icon: KeyRound,
     title: 'API Keys',
     description: 'Generate and manage API keys for Live and Sandbox environments.',
@@ -39,7 +39,7 @@ const settingsSections = [
 
 export default function SettingsPage() {
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="p-6 max-w-4xl space-y-8">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Settings</h1>

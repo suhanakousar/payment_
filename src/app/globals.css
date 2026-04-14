@@ -38,7 +38,7 @@ html {
 body {
   overflow-x: hidden;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-primary);
+  background-color: #F8FAFC;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
