@@ -1,0 +1,52 @@
+
+> payment_@0.1.0 dev
+> next dev
+
+Γû▓ Next.js 16.2.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.19.1:3000
+- Environments: .env
+Γ£ô Ready in 14.7s
+ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\arshiya\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\arshiya\payment_\package-lock.json
+
+
+Γùï Compiling / ...
+ GET / 307 in 12.8s (next.js: 12.7s, application-code: 181ms)
+Γùï Compiling /dashboard ...
+ GET /dashboard 200 in 5.4s (next.js: 5.0s, application-code: 411ms)
+ GET / 307 in 239ms (next.js: 12ms, application-code: 226ms)
+ GET /dashboard 200 in 129ms (next.js: 5ms, application-code: 123ms)
+ΓÜá Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ΓÜá Blocked cross-origin request to Next.js dev resource /__nextjs_font/geist-latin.woff2 from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /dashboard/payments 200 in 3.2s (next.js: 3.0s, application-code: 275ms)
+ GET /dashboard/payouts 200 in 1373ms (next.js: 1148ms, application-code: 225ms)
+ GET /dashboard/payouts 200 in 93ms (next.js: 5ms, application-code: 89ms)
+ GET /dashboard/transactions 200 in 1556ms (next.js: 1321ms, application-code: 234ms)
+ GET /dashboard 200 in 95ms (next.js: 10ms, application-code: 85ms)
+ GET /dashboard 200 in 67ms (next.js: 7ms, application-code: 60ms)
+ GET /dashboard 200 in 171ms (next.js: 5ms, application-code: 166ms)
