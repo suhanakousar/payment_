@@ -234,7 +234,7 @@ export default function DashboardPage() {
   const recentTxns = mockTransactions.slice(0, 5);
 
   const today = new Date();
-  const dateLabel = today.toLocaleDateString('en-IN', {
+  const dateLabel = today.toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -245,25 +245,61 @@ export default function DashboardPage() {
     <div className="space-y-6 pb-8">
 
       {/* ─── Welcome Banner ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {getGreeting()},{' '}
-            <span className="gradient-text">Merchant Admin</span>
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Here&rsquo;s what&rsquo;s happening with your payments today
-          </p>
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 animate-fade-in"
+        style={{
+          background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 40%, #7C3AED 80%, #8B5CF6 100%)',
+          boxShadow: '0 8px 32px rgba(99,102,241,0.35)',
+        }}
+      >
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }} />
+          <div className="absolute right-16 bottom-0 w-32 h-32 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }} />
+          <div className="absolute -left-8 bottom-0 w-48 h-48 rounded-full" style={{ background: 'rgba(255,255,255,0.03)' }} />
+          <svg className="absolute right-0 top-0 opacity-10" width="300" height="150" viewBox="0 0 300 150">
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="300" height="150" fill="url(#grid)" />
+          </svg>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="hidden sm:flex items-center gap-2 text-sm text-slate-400">
-            <Activity size={14} />
-            {dateLabel}
-          </span>
-          <button className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-4 py-2.5 transition-colors shadow-sm">
-            <Download size={14} />
-            Download Report
-          </button>
+
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-200 bg-white/10 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-gentle" />
+                Live
+              </span>
+              <span className="text-xs text-indigo-200" suppressHydrationWarning>{dateLabel}</span>
+            </div>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight" suppressHydrationWarning>
+              {getGreeting()}, Merchant Admin 👋
+            </h1>
+            <p className="mt-1.5 text-sm text-indigo-200">
+              Here&rsquo;s what&rsquo;s happening with your payments today
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden sm:flex flex-col items-center px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}>
+              <span className="text-xl font-extrabold text-white tabular-nums">94.2%</span>
+              <span className="text-[11px] text-indigo-200 mt-0.5">Success Rate</span>
+            </div>
+            <div className="hidden sm:flex flex-col items-center px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}>
+              <span className="text-xl font-extrabold text-white tabular-nums">1,247</span>
+              <span className="text-[11px] text-indigo-200 mt-0.5">Total Txns</span>
+            </div>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-semibold text-sm px-4 py-2.5 transition-all"
+              style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+            >
+              <Download size={14} />
+              Export Report
+            </button>
+          </div>
         </div>
       </div>
 
@@ -274,8 +310,9 @@ export default function DashboardPage() {
           value={formatCurrency(mockDashboardKPI.totalRevenue)}
           change={mockDashboardKPI.revenueChange}
           changeLabel="vs last period"
-          icon={<DollarSign size={18} />}
+          icon={<DollarSign size={18} className="text-indigo-600" />}
           iconBg="bg-indigo-50"
+          iconColor="text-indigo-600"
           accentColor="from-indigo-500 to-violet-500"
           className="animate-fade-in stagger-1 opacity-0"
         />
@@ -284,9 +321,10 @@ export default function DashboardPage() {
           value={mockDashboardKPI.totalTransactions.toLocaleString('en-IN')}
           change={mockDashboardKPI.transactionChange}
           changeLabel="vs last period"
-          icon={<ArrowLeftRight size={18} />}
-          iconBg="bg-teal-50"
-          accentColor="from-teal-400 to-cyan-500"
+          icon={<ArrowLeftRight size={18} className="text-cyan-600" />}
+          iconBg="bg-cyan-50"
+          iconColor="text-cyan-600"
+          accentColor="from-cyan-400 to-teal-500"
           className="animate-fade-in stagger-2 opacity-0"
         />
         <StatCard
@@ -294,16 +332,18 @@ export default function DashboardPage() {
           value={`${mockDashboardKPI.successRate}%`}
           change={2.1}
           changeLabel="vs last period"
-          icon={<CheckCircle size={18} />}
+          icon={<CheckCircle size={18} className="text-emerald-600" />}
           iconBg="bg-emerald-50"
-          accentColor="from-emerald-400 to-teal-500"
+          iconColor="text-emerald-600"
+          accentColor="from-emerald-400 to-green-500"
           className="animate-fade-in stagger-3 opacity-0"
         />
         <StatCard
           title="Pending Payouts"
           value={formatCurrency(mockDashboardKPI.pendingPayouts)}
-          icon={<Clock size={18} />}
+          icon={<Clock size={18} className="text-amber-600" />}
           iconBg="bg-amber-50"
+          iconColor="text-amber-600"
           accentColor="from-amber-400 to-orange-400"
           className="animate-fade-in stagger-4 opacity-0"
         />
@@ -324,16 +364,16 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-400 mt-0.5">Revenue vs Payouts over time</p>
               </div>
               {/* Period tabs */}
-              <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+              <div className="flex items-center gap-0.5 bg-indigo-50 border border-indigo-100 rounded-xl p-1">
                 {PERIOD_TABS.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActivePeriod(tab)}
                     className={cn(
-                      'px-3 py-1 rounded-md text-xs font-semibold transition-all',
+                      'px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
                       activePeriod === tab
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-indigo-400 hover:text-indigo-600'
                     )}
                   >
                     {tab}
@@ -576,12 +616,21 @@ export default function DashboardPage() {
                   gw.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500';
 
                 return (
-                  <div key={gw.gateway} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-3">
+                  <div
+                    key={gw.gateway}
+                    className="rounded-xl p-4 space-y-3"
+                    style={{
+                      background: gw.status === 'healthy' ? 'linear-gradient(135deg, #F0FDF9 0%, #ECFDF5 100%)' :
+                                  gw.status === 'degraded' ? 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)' :
+                                  'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)',
+                      border: `1px solid ${gw.status === 'healthy' ? '#A7F3D0' : gw.status === 'degraded' ? '#FDE68A' : '#FECDD3'}`,
+                    }}
+                  >
                     {/* Header row */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <GatewayStatusDot status={gw.status} />
-                        <span className="font-semibold text-sm text-slate-800">
+                        <span className="font-bold text-sm text-slate-800">
                           {gw.gateway.charAt(0) + gw.gateway.slice(1).toLowerCase()}
                         </span>
                       </div>
@@ -589,16 +638,16 @@ export default function DashboardPage() {
                         <Badge variant={badgeVariant} size="sm" dot>
                           {statusLabel}
                         </Badge>
-                        <span className="text-xs text-slate-400">{gw.avgLatency}ms</span>
+                        <span className="text-xs font-mono text-slate-500 bg-white/70 px-2 py-0.5 rounded-lg">{gw.avgLatency}ms</span>
                       </div>
                     </div>
                     {/* Progress bar */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-slate-500">Success Rate</span>
-                        <span className="text-xs font-semibold text-slate-700">{gw.successRate}%</span>
+                        <span className="text-sm font-extrabold text-slate-800">{gw.successRate}%</span>
                       </div>
-                      <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="w-full h-2 bg-white/70 rounded-full overflow-hidden">
                         <div
                           className={cn('h-full rounded-full transition-all duration-700', barColor)}
                           style={{ width: `${gw.successRate}%` }}

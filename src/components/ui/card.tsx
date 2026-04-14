@@ -3,14 +3,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const cardVariants = cva(
-  "rounded-xl bg-white transition-all duration-200",
+  "rounded-2xl bg-white transition-all duration-200",
   {
     variants: {
       variant: {
-        default: "shadow-[var(--shadow-sm)] border border-slate-100",
-        bordered: "border border-slate-200",
-        elevated: "shadow-[var(--shadow-md)] border border-slate-100",
-        glass: "glass shadow-[var(--shadow-sm)]",
+        default:  "",
+        bordered: "border-2 border-slate-200",
+        elevated: "",
+        glass:    "glass",
       },
       hoverable: {
         true: "card-hover cursor-pointer",
@@ -22,6 +22,11 @@ const cardVariants = cva(
   }
 );
 
+const cardShadow = {
+  boxShadow: '0 2px 12px rgba(99,102,241,0.07), 0 1px 3px rgba(0,0,0,0.05)',
+  border: '1px solid rgba(226,232,240,0.8)',
+};
+
 export interface CardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {
@@ -29,17 +34,16 @@ export interface CardProps
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, hoverable, ...props }, ref) => (
+  ({ className, variant, hoverable, style, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(cardVariants({ variant, hoverable }), className)}
+      style={{ ...cardShadow, ...style }}
       {...props}
     />
   )
 );
 Card.displayName = "Card";
-
-// ─── CardHeader ───────────────────────────────────────────────────────────────
 
 const CardHeader = React.forwardRef<
   HTMLDivElement,
@@ -47,13 +51,11 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col gap-1 p-6 pb-0", className)}
+    className={cn("flex flex-col gap-1 px-6 pt-5 pb-0", className)}
     {...props}
   />
 ));
 CardHeader.displayName = "CardHeader";
-
-// ─── CardTitle ────────────────────────────────────────────────────────────────
 
 const CardTitle = React.forwardRef<
   HTMLHeadingElement,
@@ -61,16 +63,11 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn(
-      "text-base font-semibold leading-tight text-slate-900",
-      className
-    )}
+    className={cn("text-sm font-bold leading-tight text-slate-900 tracking-tight", className)}
     {...props}
   />
 ));
 CardTitle.displayName = "CardTitle";
-
-// ─── CardDescription ─────────────────────────────────────────────────────────
 
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -78,23 +75,19 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-slate-500 leading-relaxed", className)}
+    className={cn("text-xs text-slate-400 leading-relaxed", className)}
     {...props}
   />
 ));
 CardDescription.displayName = "CardDescription";
 
-// ─── CardContent ─────────────────────────────────────────────────────────────
-
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6", className)} {...props} />
+  <div ref={ref} className={cn("px-6 py-5", className)} {...props} />
 ));
 CardContent.displayName = "CardContent";
-
-// ─── CardFooter ──────────────────────────────────────────────────────────────
 
 const CardFooter = React.forwardRef<
   HTMLDivElement,
@@ -103,7 +96,7 @@ const CardFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center p-6 pt-0 gap-3 border-t border-slate-100 mt-4",
+      "flex items-center px-6 py-4 gap-3 border-t border-slate-100",
       className
     )}
     {...props}
@@ -111,11 +104,4 @@ const CardFooter = React.forwardRef<
 ));
 CardFooter.displayName = "CardFooter";
 
-export {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-};
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter };

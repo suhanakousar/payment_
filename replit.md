@@ -30,8 +30,20 @@ Replit's built-in PostgreSQL is used. The `DATABASE_URL` environment variable is
 - `src/types/` — TypeScript type definitions
 - `prisma/` — Prisma schema
 
+## UI Design System
+
+- **Color palette**: EEF2FF page background, dark navy sidebar (#0C0F1E), indigo/violet primary accent
+- **Cards**: `rounded-2xl` with indigo-tinted shadows, glass morphism utilities
+- **Sidebar**: Collapsible, animated logo with glow, active state gradient, MAIN MENU section label
+- **Topbar**: Glass morphism, search bar, AI badge, animated notification bell, user profile with tier display
+- **Dashboard**: Rich gradient indigo welcome banner with Live badge and quick-stat pills
+- **Auth pages**: Split-panel layout — form card on left, deep indigo promo panel on right with stats grid and testimonial
+- **Animations**: float, glow-pulse, ping-slow, shimmer skeleton, pulse-gentle defined in globals.css
+- **Buttons**: `rounded-xl`, gradient primary, shadow-lift on hover
+
 ## Replit-Specific Configuration
 
 - Dev server binds to `0.0.0.0:5000` for Replit preview compatibility
 - `next.config.ts` sets `allowedDevOrigins: ["*"]` for proxied iframe support
 - `prisma.config.ts` handles DB connection URL (Prisma 7 config format)
+- Hydration-sensitive elements (date/greeting) use `suppressHydrationWarning`

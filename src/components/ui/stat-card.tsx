@@ -3,27 +3,14 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface StatCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Small label above the value */
   title: string;
-  /** Main KPI value (string allows formatting like "$12,400") */
   value: string | number;
-  /**
-   * Percentage change from previous period.
-   * Positive = up (green), negative = down (red), 0 = flat (slate).
-   */
   change?: number;
-  /** Contextual label next to the change, e.g. "vs last month" */
   changeLabel?: string;
-  /** Icon rendered inside the colored circle */
   icon?: React.ReactNode;
-  /**
-   * Background color of the icon circle.
-   * Defaults to an indigo tint.
-   */
   iconBg?: string;
-  /** Accent gradient line color – defaults to indigo→violet */
+  iconColor?: string;
   accentColor?: string;
-  /** Enable card-hover lift effect */
   hoverable?: boolean;
 }
 
@@ -34,6 +21,7 @@ function StatCard({
   changeLabel = "vs last period",
   icon,
   iconBg = "bg-indigo-50",
+  iconColor = "text-indigo-600",
   accentColor = "from-indigo-500 to-violet-500",
   hoverable = true,
   className,
@@ -43,80 +31,73 @@ function StatCard({
   const isNegative = change !== undefined && change < 0;
   const isFlat     = change !== undefined && change === 0;
 
-  const changeColor = isPositive
-    ? "text-teal-600"
-    : isNegative
-    ? "text-rose-500"
-    : "text-slate-400";
-
-  const ChangeIcon = isPositive
-    ? TrendingUp
-    : isNegative
-    ? TrendingDown
-    : Minus;
-
-  const absChange = change !== undefined ? Math.abs(change) : undefined;
+  const ChangeIcon  = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
+  const changeColor = isPositive ? "text-emerald-700" : isNegative ? "text-rose-600" : "text-slate-400";
+  const changeBg    = isPositive ? "bg-emerald-50 border-emerald-100" : isNegative ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100";
+  const absChange   = change !== undefined ? Math.abs(change) : undefined;
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl bg-white border border-slate-100",
-        "shadow-[var(--shadow-sm)] p-6",
+        "relative overflow-hidden rounded-2xl bg-white",
         hoverable && "card-hover",
         className
       )}
+      style={{
+        border: '1px solid rgba(255,255,255,0.9)',
+        boxShadow: '0 2px 12px rgba(99,102,241,0.07), 0 1px 3px rgba(0,0,0,0.05)',
+      }}
       {...props}
     >
-      {/* Gradient accent line at top */}
+      {/* Top accent gradient */}
+      <div className={cn("absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r", accentColor)} />
+
+      {/* Faint decorative circle */}
       <div
-        className={cn(
-          "absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r",
-          accentColor
-        )}
+        className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 70%)' }}
       />
 
-      {/* Top section: label + icon */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Title */}
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+      <div className="p-5 pt-6">
+        {/* Title + Icon */}
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400 leading-none">
             {title}
           </p>
-          {/* Value */}
-          <p className="text-2xl font-bold text-slate-900 leading-none tracking-tight truncate">
-            {value}
-          </p>
+          {icon && (
+            <div
+              className={cn(
+                "shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl",
+                iconBg, iconColor
+              )}
+              style={{ boxShadow: '0 2px 8px rgba(99,102,241,0.1)' }}
+            >
+              {icon}
+            </div>
+          )}
         </div>
 
-        {/* Icon circle */}
-        {icon && (
-          <div
-            className={cn(
-              "shrink-0 flex items-center justify-center",
-              "w-11 h-11 rounded-full",
-              iconBg
-            )}
-          >
-            <span className="text-indigo-600">{icon}</span>
+        {/* Value */}
+        <p className="mt-3 text-[1.75rem] font-extrabold text-slate-900 leading-none tracking-tight tabular-nums">
+          {value}
+        </p>
+
+        {/* Change badge */}
+        {change !== undefined && (
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border",
+                changeColor, changeBg
+              )}
+            >
+              <ChangeIcon size={11} strokeWidth={2.5} />
+              {isFlat ? "0%" : `${absChange?.toFixed(1)}%`}
+            </span>
+            <span className="text-[11px] text-slate-400">{changeLabel}</span>
           </div>
         )}
       </div>
-
-      {/* Change row */}
-      {change !== undefined && (
-        <div className="mt-4 flex items-center gap-1.5">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 text-xs font-semibold",
-              changeColor
-            )}
-          >
-            <ChangeIcon size={13} strokeWidth={2.5} />
-            {isFlat ? "0%" : `${absChange?.toFixed(1)}%`}
-          </span>
-          <span className="text-xs text-slate-400">{changeLabel}</span>
-        </div>
-      )}
     </div>
   );
 }
