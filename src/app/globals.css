@@ -29,25 +29,40 @@
   --shadow-glow: 0 0 24px rgba(99,102,241,0.3);
 }
 
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+@layer base {
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-html {
-  overflow-x: hidden;
+  html {
+    overflow-x: clip;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F8FAFC;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-body {
-  overflow-x: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #F8FAFC;
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ── Dashboard content area offset (unlayered = wins over all layers) ── */
+.dash-content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .dash-content {
+    padding-left: 16rem;
+  }
 }
 
-h1, h2, h3, h4, h5, h6, p {
-  max-width: 100%;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+@layer base {
+  h1, h2, h3, h4, h5, h6, p {
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }

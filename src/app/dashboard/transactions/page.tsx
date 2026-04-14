@@ -869,7 +869,7 @@ export default function TransactionsPage() {
 
   // ────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6 p-6 min-h-full">
+    <div className="flex flex-col gap-6 min-h-full">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">

@@ -242,7 +242,7 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="p-6 space-y-6 pb-8">
+    <div className="space-y-6 pb-4">
 
       {/* ─── Welcome Banner ──────────────────────────────────────────────────── */}
       <div

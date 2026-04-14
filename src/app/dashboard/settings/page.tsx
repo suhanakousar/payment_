@@ -39,7 +39,7 @@ const settingsSections = [
 
 export default function SettingsPage() {
   return (
-    <div className="p-6 max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-8">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Settings</h1>
