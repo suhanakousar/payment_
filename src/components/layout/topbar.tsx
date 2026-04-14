@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Search, Bell, ChevronDown, User, LogOut, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,11 +30,17 @@ const NOTIFICATIONS = [
 
 export default function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { title, crumbs } = getRouteMeta(pathname);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+
+  function handleSignOut() {
+    setDropdownOpen(false);
+    router.push('/login');
+  }
 
   return (
     <header
@@ -203,14 +209,14 @@ export default function Topbar() {
                 <div className="py-1.5">
                   <button
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                    onClick={() => setDropdownOpen(false)}
+                    onClick={() => { setDropdownOpen(false); router.push('/dashboard/settings/profile'); }}
                   >
                     <User size={14} className="text-slate-400" />
                     My Profile
                   </button>
                   <button
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                    onClick={() => setDropdownOpen(false)}
+                    onClick={() => { setDropdownOpen(false); router.push('/dashboard/settings'); }}
                   >
                     <Settings size={14} className="text-slate-400" />
                     Settings
@@ -220,7 +226,7 @@ export default function Topbar() {
                 <div style={{ borderTop: '1px solid #F1F5F9' }} className="py-1.5">
                   <button
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
-                    onClick={() => setDropdownOpen(false)}
+                    onClick={handleSignOut}
                   >
                     <LogOut size={14} />
                     Sign out
