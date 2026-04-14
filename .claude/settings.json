@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(mkdir -p /c/Users/Admin/payment_/src/types)",
+      "Bash(mkdir -p /c/Users/Admin/payment_/src/lib)",
+      "Bash(mkdir -p /c/Users/Admin/payment_/src/components/ui)",
+      "Bash(mkdir -p /c/Users/Admin/payment_/src/components/layout)",
+      "Bash(mkdir -p \"/c/Users/Admin/payment_/src/app/\\(dashboard\\)\")",
+      "Bash(mkdir -p \"/c/Users/Admin/payment_/src/app/\\(auth\\)\")",
+      "Bash(wc -l /c/Users/Admin/payment_/src/components/ui/*.tsx /c/Users/Admin/payment_/src/app/globals.css /c/Users/Admin/payment_/src/lib/utils.ts)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/next build:*)",
+      "Bash(node_modules/.bin/tsc --noEmit --strict false)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Admin\\payment_"
+    ]
+  }
+}

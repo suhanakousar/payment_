@@ -1,0 +1,275 @@
+// =============================================================================
+// Payment Aggregator Platform — Prisma Schema
+// Database: PostgreSQL
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  MERCHANT_ADMIN
+  OPS
+  DEV
+  ANALYST
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MerchantTier {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum GatewayName {
+  RAZORPAY
+  CASHFREE
+  STRIPE
+  AUTO
+}
+
+enum TransactionStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PayoutMode {
+  IMPS
+  NEFT
+  RTGS
+  UPI
+}
+
+enum PayoutStatus {
+  QUEUED
+  PROCESSING
+  SUCCESS
+  FAILED
+  PERMANENTLY_FAILED
+  CANCELLED
+}
+
+// =============================================================================
+// MODELS
+// =============================================================================
+
+model User {
+  id           String     @id @default(cuid())
+  merchantId   String?
+  email        String     @unique
+  phone        String?    @unique
+  passwordHash String
+  role         UserRole   @default(MERCHANT_ADMIN)
+  status       UserStatus @default(PENDING_VERIFICATION)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  merchant  Merchant?  @relation(fields: [merchantId], references: [id])
+  auditLogs AuditLog[]
+
+  @@index([merchantId])
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Merchant {
+  id                 String      @id @default(cuid())
+  businessName       String
+  gstin              String?
+  pan                String?
+  kycStatus          KycStatus   @default(PENDING)
+  tier               MerchantTier @default(STARTER)
+  dailyPayoutLimit   Decimal     @default(0) @db.Decimal(18, 2)
+  preferredGateway   GatewayName @default(AUTO)
+  webhookUrl         String?
+  webhookSecret      String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  // Relations
+  users        User[]
+  transactions Transaction[]
+  payouts      Payout[]
+  apiKeys      ApiKey[]
+  auditLogs    AuditLog[]
+  config       MerchantConfig?
+
+  @@index([kycStatus])
+  @@index([tier])
+  @@map("merchants")
+}
+
+model Transaction {
+  id               String            @id @default(cuid())
+  merchantId       String
+  gateway          GatewayName
+  gatewayOrderId   String?
+  gatewayPaymentId String?
+  amount           Decimal           @db.Decimal(18, 2)
+  currency         String            @default("INR")
+  status           TransactionStatus @default(PENDING)
+  paymentMethod    String?
+  customerEmail    String?
+  customerPhone    String?
+  idempotencyKey   String?           @unique
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  merchant     Merchant      @relation(fields: [merchantId], references: [id])
+  webhookLogs  WebhookLog[]
+
+  @@index([merchantId, createdAt])
+  @@index([status])
+  @@index([gateway])
+  @@index([gatewayOrderId])
+  @@index([gatewayPaymentId])
+  @@index([customerEmail])
+  @@map("transactions")
+}
+
+model Payout {
+  id               String       @id @default(cuid())
+  merchantId       String
+  batchId          String?
+  gateway          GatewayName
+  gatewayPayoutId  String?
+  beneficiaryName  String
+  accountNumber    String
+  ifscCode         String
+  amount           Decimal      @db.Decimal(18, 2)
+  mode             PayoutMode
+  status           PayoutStatus @default(QUEUED)
+  retryCount       Int          @default(0)
+  failureReason    String?
+  scheduledAt      DateTime?
+  processedAt      DateTime?
+  createdAt        DateTime     @default(now())
+
+  // Relations
+  merchant    Merchant     @relation(fields: [merchantId], references: [id])
+  webhookLogs WebhookLog[]
+
+  @@index([merchantId, createdAt])
+  @@index([status])
+  @@index([batchId])
+  @@index([gateway])
+  @@index([gatewayPayoutId])
+  @@map("payouts")
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  merchantId  String
+  name        String
+  keyPrefix   String
+  keyHash     String
+  scope       String[]
+  environment String    @default("live")
+  isActive    Boolean   @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+
+  @@index([merchantId])
+  @@index([keyPrefix])
+  @@index([isActive])
+  @@map("api_keys")
+}
+
+model WebhookLog {
+  id            String    @id @default(cuid())
+  transactionId String?
+  payoutId      String?
+  source        String
+  eventType     String
+  eventId       String    @unique
+  payload       Json
+  signatureValid Boolean
+  processed     Boolean   @default(false)
+  receivedAt    DateTime  @default(now())
+
+  // Relations
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  payout      Payout?      @relation(fields: [payoutId], references: [id])
+
+  @@index([transactionId])
+  @@index([payoutId])
+  @@index([eventType])
+  @@index([processed])
+  @@index([source])
+  @@map("webhook_logs")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  merchantId   String?
+  action       String
+  resourceType String
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  merchant Merchant? @relation(fields: [merchantId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([merchantId, createdAt])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@map("audit_logs")
+}
+
+model MerchantConfig {
+  id                String   @id @default(cuid())
+  merchantId        String   @unique
+  razorpayKeyId     String?
+  razorpayKeySecret String?
+  cashfreeAppId     String?
+  cashfreeSecretKey String?
+  stripeSecretKey   String?
+  gatewayWeights    Json?
+  maxAmount         Decimal? @db.Decimal(18, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+
+  @@map("merchant_configs")
+}
