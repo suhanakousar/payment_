@@ -1,0 +1,194 @@
+Update my existing Payment Aggregator (PayAgg) project with the following enhancements.
+
+IMPORTANT: Do NOT rebuild. Modify existing structure and integrate properly.
+
+--------------------------------------------------
+
+1. WHITE-LABEL GATEWAY
+
+- Remove all third-party gateway names from frontend (Razorpay, Cashfree, Stripe).
+- System should appear as a single independent gateway.
+- Backend should still use multiple gateways internally.
+- Do not expose gateway field in UI anywhere.
+
+--------------------------------------------------
+
+2. DISPUTE SYSTEM (FULL LOGIC + PURPOSE)
+
+PURPOSE:
+Dispute system is used to handle problematic transactions where:
+- Payment failed but amount is deducted
+- Customer requests refund (product return/service issue)
+- Customer raises complaint
+
+Dispute acts as a **case/ticket system** before refund decision.
+
+WORKFLOW:
+
+1. Dispute is created when:
+   - Transaction status is FAILED but amount deducted OR
+   - Customer raises complaint OR
+   - Refund request initiated
+
+2. System creates dispute record linked to transaction.
+
+3. Dispute lifecycle:
+   - PENDING → newly created
+   - UNDER_REVIEW → merchant reviewing
+   - RESOLVED → issue handled (either refund or rejected)
+
+4. Dispute does NOT directly refund money.
+   It only tracks the issue.
+
+BACKEND LOGIC:
+
+- Validate transaction exists
+- Prevent duplicate disputes for same transaction
+- Store reason and metadata
+- Allow status updates
+- Log actions (audit trail)
+
+DATABASE MODEL:
+
+Dispute:
+- id
+- transactionId (relation)
+- amount
+- reason (FAILED_PAYMENT | RETURN | COMPLAINT)
+- description (optional)
+- status (PENDING | UNDER_REVIEW | RESOLVED)
+- createdAt
+- updatedAt
+
+API:
+
+- POST /api/v1/disputes → create dispute
+- GET /api/v1/disputes → list disputes
+- PATCH /api/v1/disputes/:id → update status
+
+--------------------------------------------------
+
+3. CHARGEBACK SYSTEM (FULL LOGIC + PURPOSE)
+
+PURPOSE:
+Chargeback is the **final decision stage** where money is refunded or rejected after dispute.
+
+It simulates real banking behavior where:
+- Customer asks bank for refund
+- Merchant gets limited time to respond
+- Final decision → refund or reject
+
+WORKFLOW:
+
+1. Chargeback is created FROM a dispute (not directly from transaction)
+
+2. Merchant gets time window:
+   - 7 to 15 days (configurable)
+
+3. Merchant actions:
+   - ACCEPT → refund processed
+   - REJECT → dispute closed without refund
+
+4. If no action within deadline:
+   - Auto mark as EXPIRED or AUTO-RESOLVED
+
+5. After ACCEPT:
+   - Update transaction → REFUNDED
+   - Trigger payout reversal logic (if needed)
+
+BACKEND LOGIC:
+
+- Chargeback must always be linked to a dispute
+- Prevent multiple chargebacks for same dispute
+- Track deadline and remaining days
+- Auto-update status when deadline passes
+- Update transaction status on completion
+
+DATABASE MODEL:
+
+Chargeback:
+- id
+- disputeId (relation)
+- transactionId
+- amount
+- status (PENDING | ACCEPTED | REJECTED | COMPLETED | EXPIRED)
+- deadline (DateTime)
+- createdAt
+- updatedAt
+
+API:
+
+- POST /api/v1/chargebacks → create chargeback from dispute
+- GET /api/v1/chargebacks → list
+- PATCH /api/v1/chargebacks/:id → accept/reject
+
+--------------------------------------------------
+
+4. FRONTEND (UI REQUIREMENTS)
+
+Add new pages:
+
+/dashboard/disputes
+/dashboard/chargebacks
+
+Disputes Page:
+- Table with:
+  - Dispute ID
+  - Transaction ID
+  - Amount
+  - Reason
+  - Status
+  - Date
+- Filter by status
+
+Chargebacks Page:
+- Table with:
+  - Chargeback ID
+  - Dispute ID
+  - Amount
+  - Status
+  - Deadline
+  - Days remaining
+- Action buttons:
+  - Accept
+  - Reject
+
+--------------------------------------------------
+
+5. DASHBOARD UPDATE
+
+Add stats:
+- Total Disputes
+- Pending Disputes
+- Total Chargebacks
+- Pending Actions
+
+Replace gateway health with:
+- System Success Rate
+- Failed Transactions
+- Avg Processing Time
+
+--------------------------------------------------
+
+6. SYSTEM BEHAVIOR SUMMARY
+
+Dispute = Problem tracking  
+Chargeback = Final refund decision  
+
+Flow:
+Transaction → Dispute → Chargeback → Final Outcome
+
+--------------------------------------------------
+
+7. IMPORTANT RULES
+
+- Do NOT expose gateway names anywhere
+- Maintain white-label behavior
+- Keep backend scalable
+- Follow existing project structure
+- Ensure proper validation and error handling
+
+--------------------------------------------------
+
+Goal:
+Transform system into a real-world white-label payment aggregator with dispute and chargeback lifecycle management.

@@ -17,6 +17,8 @@ import {
   KeyRound,
   Zap,
   X,
+  AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +35,8 @@ const navItems: NavItem[] = [
   { label: 'Payments',     href: '/dashboard/payments',     icon: CreditCard },
   { label: 'Payouts',      href: '/dashboard/payouts',      icon: Send },
   { label: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
+  { label: 'Disputes',     href: '/dashboard/disputes',     icon: AlertTriangle },
+  { label: 'Chargebacks',  href: '/dashboard/chargebacks',  icon: ShieldAlert },
   { label: 'Analytics',    href: '/dashboard/analytics',    icon: BarChart3 },
   {
     label: 'Settings',

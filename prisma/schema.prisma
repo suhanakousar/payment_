@@ -57,6 +57,26 @@ enum TransactionStatus {
   PARTIALLY_REFUNDED
 }
 
+enum DisputeReason {
+  FAILED_PAYMENT
+  RETURN
+  COMPLAINT
+}
+
+enum DisputeStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+}
+
+enum ChargebackStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  EXPIRED
+}
+
 enum PayoutMode {
   IMPS
   NEFT
@@ -146,6 +166,7 @@ model Transaction {
   // Relations
   merchant     Merchant      @relation(fields: [merchantId], references: [id])
   webhookLogs  WebhookLog[]
+  disputes     Dispute[]
 
   @@index([merchantId, createdAt])
   @@index([status])
@@ -154,6 +175,45 @@ model Transaction {
   @@index([gatewayPaymentId])
   @@index([customerEmail])
   @@map("transactions")
+}
+
+model Dispute {
+  id            String        @id @default(cuid())
+  transactionId String
+  amount        Decimal       @db.Decimal(18, 2)
+  reason        DisputeReason
+  description   String?
+  status        DisputeStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  transaction  Transaction  @relation(fields: [transactionId], references: [id])
+  chargebacks  Chargeback[]
+
+  @@index([transactionId])
+  @@index([status])
+  @@index([reason])
+  @@map("disputes")
+}
+
+model Chargeback {
+  id            String           @id @default(cuid())
+  disputeId     String           @unique
+  transactionId String
+  amount        Decimal          @db.Decimal(18, 2)
+  status        ChargebackStatus @default(PENDING)
+  deadline      DateTime
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  dispute Dispute @relation(fields: [disputeId], references: [id])
+
+  @@index([disputeId])
+  @@index([status])
+  @@index([transactionId])
+  @@map("chargebacks")
 }
 
 model Payout {

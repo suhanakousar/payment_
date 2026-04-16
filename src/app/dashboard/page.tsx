@@ -11,9 +11,11 @@ import {
   Activity,
   TrendingUp,
   ExternalLink,
-  Zap,
   CreditCard,
-  RefreshCw,
+  AlertTriangle,
+  ShieldAlert,
+  XCircle,
+  Gauge,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -34,10 +36,12 @@ import {
   mockDashboardKPI,
   mockRevenueData,
   mockTransactions,
-  mockGatewayHealth,
   mockPaymentMethodBreakdown,
   mockTransactionStatusData,
   mockRecentActivity,
+  mockDisputes,
+  mockChargebacks,
+  mockSystemPerformance,
 } from '@/lib/mock-data';
 import {
   cn,
@@ -52,7 +56,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { RecentActivity, GatewayHealth } from '@/types';
+import type { RecentActivity } from '@/types';
 
 // ─── Local types ─────────────────────────────────────────────────────────────
 
@@ -144,20 +148,6 @@ function MethodTooltip({ active, payload, label }: ChartTooltipProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gateway Status Dot
-// ─────────────────────────────────────────────────────────────────────────────
-
-function GatewayStatusDot({ status }: { status: GatewayHealth['status'] }) {
-  const cls =
-    status === 'healthy'  ? 'bg-teal-500'  :
-    status === 'degraded' ? 'bg-amber-500' :
-                            'bg-rose-500';
-  return (
-    <span className={cn('inline-block w-2.5 h-2.5 rounded-full shrink-0', cls)} />
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Activity Severity Dot
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -229,6 +219,14 @@ export default function DashboardPage() {
 
   // Total transactions for donut center
   const totalTxnCount = mockTransactionStatusData.reduce((s, d) => s + d.count, 0);
+
+  // Dispute & chargeback stats
+  const disputeStats = useMemo(() => ({
+    total:          mockDisputes.length,
+    pending:        mockDisputes.filter((d) => d.status === 'PENDING').length,
+    totalCb:        mockChargebacks.length,
+    pendingActions: mockChargebacks.filter((cb) => cb.status === 'PENDING').length,
+  }), []);
 
   // Recent 5 transactions
   const recentTxns = mockTransactions.slice(0, 5);
@@ -347,6 +345,61 @@ export default function DashboardPage() {
           accentColor="from-amber-400 to-orange-400"
           className="animate-fade-in stagger-4 opacity-0"
         />
+      </div>
+
+      {/* ─── Dispute & Chargeback Stats Row ──────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/dashboard/disputes" className="block">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Total Disputes</span>
+              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                <AlertTriangle size={15} className="text-amber-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold text-amber-900">{disputeStats.total}</p>
+            <p className="text-xs text-amber-600 mt-1">All dispute cases</p>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/disputes?status=PENDING" className="block">
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Pending Disputes</span>
+              <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center">
+                <AlertTriangle size={15} className="text-orange-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold text-orange-900">{disputeStats.pending}</p>
+            <p className="text-xs text-orange-600 mt-1">Awaiting review</p>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/chargebacks" className="block">
+          <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-rose-700 uppercase tracking-wide">Total Chargebacks</span>
+              <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
+                <ShieldAlert size={15} className="text-rose-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold text-rose-900">{disputeStats.totalCb}</p>
+            <p className="text-xs text-rose-600 mt-1">All chargeback cases</p>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/chargebacks?status=PENDING" className="block">
+          <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Pending Actions</span>
+              <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center">
+                <ShieldAlert size={15} className="text-purple-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-extrabold text-purple-900">{disputeStats.pendingActions}</p>
+            <p className="text-xs text-purple-600 mt-1">Require decision</p>
+          </div>
+        </Link>
       </div>
 
       {/* ─── Charts Row 1 ────────────────────────────────────────────────────── */}
@@ -586,82 +639,73 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Gateway Health */}
+        {/* System Performance */}
         <Card className="animate-fade-in stagger-2 opacity-0">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap size={16} className="text-indigo-500" />
-                  Gateway Health
-                </CardTitle>
-                <p className="text-xs text-slate-400 mt-0.5">Live status &amp; performance</p>
-              </div>
-              <button className="text-slate-400 hover:text-slate-600 transition-colors" title="Refresh">
-                <RefreshCw size={14} />
-              </button>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Gauge size={16} className="text-indigo-500" />
+                System Performance
+              </CardTitle>
+              <p className="text-xs text-slate-400 mt-0.5">Live processing metrics</p>
             </div>
           </CardHeader>
-          <CardContent className="pt-3">
-            <div className="space-y-4">
-              {mockGatewayHealth.map((gw) => {
-                const statusLabel =
-                  gw.status === 'healthy'  ? 'Healthy'  :
-                  gw.status === 'degraded' ? 'Degraded' : 'Down';
-                const badgeVariant =
-                  gw.status === 'healthy'  ? 'success'  :
-                  gw.status === 'degraded' ? 'warning'  : 'error';
-                const barColor =
-                  gw.status === 'healthy'  ? 'bg-teal-500'  :
-                  gw.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500';
+          <CardContent className="pt-3 space-y-4">
 
-                return (
+            {/* Success Rate */}
+            <div className="rounded-xl p-4 space-y-3" style={{ background: 'linear-gradient(135deg, #F0FDF9 0%, #ECFDF5 100%)', border: '1px solid #A7F3D0' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-teal-600" />
+                  <span className="text-sm font-semibold text-slate-800">System Success Rate</span>
+                </div>
+                <Badge variant="success" size="sm" dot>Live</Badge>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-slate-500">Success Rate</span>
+                  <span className="text-sm font-extrabold text-slate-800">{mockSystemPerformance.successRate}%</span>
+                </div>
+                <div className="w-full h-2 bg-white/70 rounded-full overflow-hidden">
                   <div
-                    key={gw.gateway}
-                    className="rounded-xl p-4 space-y-3"
-                    style={{
-                      background: gw.status === 'healthy' ? 'linear-gradient(135deg, #F0FDF9 0%, #ECFDF5 100%)' :
-                                  gw.status === 'degraded' ? 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)' :
-                                  'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)',
-                      border: `1px solid ${gw.status === 'healthy' ? '#A7F3D0' : gw.status === 'degraded' ? '#FDE68A' : '#FECDD3'}`,
-                    }}
-                  >
-                    {/* Header row */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <GatewayStatusDot status={gw.status} />
-                        <span className="font-bold text-sm text-slate-800">
-                          {gw.gateway.charAt(0) + gw.gateway.slice(1).toLowerCase()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={badgeVariant} size="sm" dot>
-                          {statusLabel}
-                        </Badge>
-                        <span className="text-xs font-mono text-slate-500 bg-white/70 px-2 py-0.5 rounded-lg">{gw.avgLatency}ms</span>
-                      </div>
-                    </div>
-                    {/* Progress bar */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-slate-500">Success Rate</span>
-                        <span className="text-sm font-extrabold text-slate-800">{gw.successRate}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-white/70 rounded-full overflow-hidden">
-                        <div
-                          className={cn('h-full rounded-full transition-all duration-700', barColor)}
-                          style={{ width: `${gw.successRate}%` }}
-                        />
-                      </div>
-                    </div>
-                    {/* Last checked */}
-                    <p className="text-[11px] text-slate-400">
-                      Last checked: {formatRelativeTime(gw.lastChecked)}
-                    </p>
-                  </div>
-                );
-              })}
+                    className="h-full rounded-full bg-teal-500 transition-all duration-700"
+                    style={{ width: `${mockSystemPerformance.successRate}%` }}
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Last updated: {formatRelativeTime(mockSystemPerformance.lastUpdated)}
+              </p>
             </div>
+
+            {/* Failed Transactions */}
+            <div className="rounded-xl p-4 space-y-2" style={{ background: 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)', border: '1px solid #FECDD3' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <XCircle size={15} className="text-rose-500" />
+                  <span className="text-sm font-semibold text-slate-800">Failed Transactions</span>
+                </div>
+                <span className="text-xl font-extrabold text-rose-700">
+                  {mockSystemPerformance.failedTransactions}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">This period</p>
+            </div>
+
+            {/* Avg Processing Time */}
+            <div className="rounded-xl p-4 space-y-2" style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', border: '1px solid #BFDBFE' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity size={15} className="text-blue-500" />
+                  <span className="text-sm font-semibold text-slate-800">Avg Processing Time</span>
+                </div>
+                <span className="text-xl font-extrabold text-blue-700">
+                  {mockSystemPerformance.avgProcessingTimeMs}ms
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">Average per transaction</p>
+            </div>
+
           </CardContent>
         </Card>
       </div>
@@ -698,8 +742,7 @@ export default function DashboardPage() {
                     <th className="text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-3 py-3">Amount</th>
                     <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-3 py-3">Status</th>
                     <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-3 py-3 hidden md:table-cell">Method</th>
-                    <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-3 py-3 hidden lg:table-cell">Gateway</th>
-                    <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-6 py-3 hidden xl:table-cell">Date</th>
+                    <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-6 py-3 hidden lg:table-cell">Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -735,14 +778,8 @@ export default function DashboardPage() {
                           {txn.paymentMethod ?? '—'}
                         </span>
                       </td>
-                      {/* Gateway */}
-                      <td className="px-3 py-3.5 hidden lg:table-cell">
-                        <span className="text-xs font-medium text-slate-600">
-                          {txn.gateway.charAt(0) + txn.gateway.slice(1).toLowerCase()}
-                        </span>
-                      </td>
                       {/* Date */}
-                      <td className="px-6 py-3.5 hidden xl:table-cell">
+                      <td className="px-6 py-3.5 hidden lg:table-cell">
                         <span className="text-[11px] text-slate-400 whitespace-nowrap">
                           {formatRelativeTime(txn.createdAt)}
                         </span>

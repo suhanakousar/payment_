@@ -22,13 +22,33 @@ Replit's built-in PostgreSQL is used. The `DATABASE_URL` environment variable is
 - To push schema changes: `npm run db:push`
 - To generate client after schema changes: `npm run prisma:generate`
 
+## Features
+
+- **White-label gateway**: No third-party gateway names exposed in UI; backend routes internally through multiple providers
+- **Dispute system**: Full dispute lifecycle (PENDING → UNDER_REVIEW → RESOLVED) with reason tracking (FAILED_PAYMENT, RETURN, COMPLAINT)
+- **Chargeback system**: Final refund decision stage linked to disputes (PENDING → ACCEPTED/REJECTED/COMPLETED/EXPIRED) with deadline tracking and auto-expiry
+- **Dashboard**: Dispute/chargeback stats row, System Performance metrics (replacing Gateway Health), no gateway names in recent transactions
+
+## API Routes (v1)
+
+- `POST /api/v1/disputes` — Create dispute (validates no duplicate per transaction)
+- `GET /api/v1/disputes` — List disputes (filterable by status)
+- `PATCH /api/v1/disputes/:id` — Update dispute status
+- `POST /api/v1/chargebacks` — Create chargeback from dispute (prevents duplicate per dispute)
+- `GET /api/v1/chargebacks` — List chargebacks (auto-expires passed deadlines)
+- `PATCH /api/v1/chargebacks/:id` — Accept or reject a pending chargeback
+
 ## Key Directories
 
 - `src/app/` — Next.js App Router pages and API routes
+- `src/app/dashboard/disputes/` — Disputes management page
+- `src/app/dashboard/chargebacks/` — Chargebacks management page
+- `src/app/api/v1/disputes/` — Dispute API routes
+- `src/app/api/v1/chargebacks/` — Chargeback API routes
 - `src/components/` — Shared React components
 - `src/lib/` — Utilities and mock data
 - `src/types/` — TypeScript type definitions
-- `prisma/` — Prisma schema
+- `prisma/` — Prisma schema (includes Dispute and Chargeback models)
 
 ## UI Design System
 
