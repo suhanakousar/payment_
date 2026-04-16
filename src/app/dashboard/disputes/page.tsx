@@ -21,9 +21,7 @@ const REASON_LABELS: Record<Dispute['reason'], string> = {
   COMPLAINT:      'Complaint',
 };
 
-function disputeBadgeVariant(
-  status: DisputeStatus
-): 'warning' | 'info' | 'success' | 'default' {
+function disputeBadgeVariant(status: DisputeStatus): 'warning' | 'info' | 'success' | 'default' {
   const map: Record<DisputeStatus, 'warning' | 'info' | 'success' | 'default'> = {
     PENDING:      'warning',
     UNDER_REVIEW: 'info',
@@ -32,9 +30,7 @@ function disputeBadgeVariant(
   return map[status] ?? 'default';
 }
 
-function reasonBadgeVariant(
-  reason: Dispute['reason']
-): 'error' | 'warning' | 'info' {
+function reasonBadgeVariant(reason: Dispute['reason']): 'error' | 'warning' | 'info' {
   const map: Record<Dispute['reason'], 'error' | 'warning' | 'info'> = {
     FAILED_PAYMENT: 'error',
     RETURN:         'warning',
@@ -42,6 +38,13 @@ function reasonBadgeVariant(
   };
   return map[reason];
 }
+
+const STAT_CARDS = (stats: { total: number; pending: number; underReview: number; resolved: number }) => [
+  { label: 'Total Disputes', value: stats.total,       color: 'var(--text-primary)',  bg: 'rgba(255,255,255,0.04)',    border: 'var(--border)' },
+  { label: 'Pending',        value: stats.pending,     color: '#FCD34D',              bg: 'rgba(252,211,77,0.08)',     border: 'rgba(252,211,77,0.2)' },
+  { label: 'Under Review',   value: stats.underReview, color: '#22D3EE',              bg: 'rgba(34,211,238,0.08)',     border: 'rgba(34,211,238,0.2)' },
+  { label: 'Resolved',       value: stats.resolved,    color: '#34D399',              bg: 'rgba(52,211,153,0.08)',     border: 'rgba(52,211,153,0.2)' },
+];
 
 export default function DisputesPage() {
   const [activeStatus, setActiveStatus] = useState<DisputeStatus | 'ALL'>('ALL');
@@ -60,20 +63,23 @@ export default function DisputesPage() {
   }), [disputes]);
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="space-y-5 pb-4">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-            <AlertTriangle size={20} className="text-amber-500" />
+          <h1 className="text-xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <AlertTriangle size={20} style={{ color: '#FCD34D' }} />
             Disputes
           </h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             Track and manage payment dispute cases
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors">
+        <button
+          className="inline-flex items-center gap-2 text-xs font-semibold transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           <RefreshCw size={13} />
           Refresh
         </button>
@@ -81,18 +87,16 @@ export default function DisputesPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Disputes',    value: stats.total,       color: 'text-slate-800',   bg: 'bg-slate-50',  border: 'border-slate-100' },
-          { label: 'Pending',           value: stats.pending,     color: 'text-amber-700',   bg: 'bg-amber-50',  border: 'border-amber-100' },
-          { label: 'Under Review',      value: stats.underReview, color: 'text-indigo-700',  bg: 'bg-indigo-50', border: 'border-indigo-100' },
-          { label: 'Resolved',          value: stats.resolved,    color: 'text-teal-700',    bg: 'bg-teal-50',   border: 'border-teal-100' },
-        ].map((s) => (
+        {STAT_CARDS(stats).map((s) => (
           <div
             key={s.label}
-            className={cn('rounded-xl border p-4', s.bg, s.border)}
+            className="rounded-xl p-4"
+            style={{ background: s.bg, border: `1px solid ${s.border}` }}
           >
-            <p className="text-xs text-slate-500 font-medium">{s.label}</p>
-            <p className={cn('text-2xl font-extrabold mt-1', s.color)}>{s.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+              {s.label}
+            </p>
+            <p className="text-2xl font-extrabold mt-1" style={{ color: s.color }}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -102,21 +106,22 @@ export default function DisputesPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <CardTitle className="flex items-center gap-2">
-              <Filter size={15} className="text-indigo-500" />
+              <Filter size={14} style={{ color: 'var(--primary)' }} />
               Dispute Records
             </CardTitle>
-            {/* Status filter tabs */}
-            <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
+            <div
+              className="flex items-center gap-0.5 rounded-xl p-1"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}
+            >
               {STATUS_TABS.map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => setActiveStatus(tab.value)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                    activeStatus === tab.value
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  )}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: activeStatus === tab.value ? 'var(--primary)' : 'transparent',
+                    color: activeStatus === tab.value ? '#060C1A' : 'var(--text-secondary)',
+                  }}
                 >
                   {tab.label}
                 </button>
@@ -128,11 +133,12 @@ export default function DisputesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100">
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   {['Dispute ID', 'Transaction ID', 'Amount', 'Reason', 'Status', 'Date'].map((h) => (
                     <th
                       key={h}
-                      className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-5 py-3 first:pl-6 last:pr-6"
+                      className="text-left text-[10px] font-bold uppercase tracking-wide px-5 py-3 first:pl-6 last:pr-6"
+                      style={{ color: 'var(--text-muted)' }}
                     >
                       {h}
                     </th>
@@ -142,7 +148,7 @@ export default function DisputesPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-slate-400 text-sm">
+                    <td colSpan={6} className="text-center py-12 text-sm" style={{ color: 'var(--text-muted)' }}>
                       No disputes found
                     </td>
                   </tr>
@@ -150,23 +156,21 @@ export default function DisputesPage() {
                   filtered.map((dispute, idx) => (
                     <tr
                       key={dispute.id}
-                      className={cn(
-                        'group transition-colors hover:bg-slate-50/70',
-                        idx !== filtered.length - 1 && 'border-b border-slate-50'
-                      )}
+                      className="table-row-dark"
+                      style={{ borderBottom: idx !== filtered.length - 1 ? '1px solid rgba(255,255,255,0.03)' : undefined }}
                     >
                       <td className="px-6 py-3.5">
-                        <span className="font-mono text-xs text-indigo-600 font-medium">
+                        <span className="font-mono text-xs font-medium" style={{ color: 'var(--primary)' }}>
                           {dispute.id}
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-mono text-xs text-slate-600">
+                        <span className="font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {dispute.transactionId.slice(0, 14)}&hellip;
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-semibold text-slate-800 text-xs">
+                        <span className="font-semibold text-xs" style={{ color: 'var(--text-primary)' }}>
                           {formatCurrency(dispute.amount)}
                         </span>
                       </td>
@@ -181,11 +185,9 @@ export default function DisputesPage() {
                         </Badge>
                       </td>
                       <td className="px-5 py-3.5 pr-6">
-                        <span className="text-[11px] text-slate-400 whitespace-nowrap">
+                        <span className="text-[11px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
                           {new Date(dispute.createdAt).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
+                            day: '2-digit', month: 'short', year: 'numeric',
                           })}
                         </span>
                       </td>
@@ -195,8 +197,8 @@ export default function DisputesPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-3 border-t border-slate-100">
-            <span className="text-xs text-slate-400">
+          <div className="px-6 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Showing {filtered.length} of {disputes.length} disputes
             </span>
           </div>

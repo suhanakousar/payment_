@@ -3,18 +3,18 @@
 import { useState, useMemo } from 'react';
 import { ShieldAlert, Filter, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { mockChargebacks } from '@/lib/mock-data';
-import { cn, formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Chargeback, ChargebackStatus } from '@/types';
 
 const STATUS_TABS: Array<{ value: ChargebackStatus | 'ALL'; label: string }> = [
-  { value: 'ALL',      label: 'All' },
-  { value: 'PENDING',  label: 'Pending' },
-  { value: 'ACCEPTED', label: 'Accepted' },
-  { value: 'REJECTED', label: 'Rejected' },
-  { value: 'COMPLETED',label: 'Completed' },
-  { value: 'EXPIRED',  label: 'Expired' },
+  { value: 'ALL',       label: 'All' },
+  { value: 'PENDING',   label: 'Pending' },
+  { value: 'ACCEPTED',  label: 'Accepted' },
+  { value: 'REJECTED',  label: 'Rejected' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'EXPIRED',   label: 'Expired' },
 ];
 
 function chargebackBadgeVariant(
@@ -60,7 +60,6 @@ export default function ChargebacksPage() {
 
   const stats = useMemo(() => ({
     total:          resolvedChargebacks.length,
-    pending:        resolvedChargebacks.filter((cb) => cb.status === 'PENDING').length,
     pendingActions: resolvedChargebacks.filter((cb) => cb.status === 'PENDING').length,
     accepted:       resolvedChargebacks.filter((cb) => cb.status === 'ACCEPTED').length,
     rejected:       resolvedChargebacks.filter((cb) => cb.status === 'REJECTED').length,
@@ -76,9 +75,7 @@ export default function ChargebacksPage() {
       });
       if (res.ok) {
         const json = await res.json();
-        setChargebacks((prev) =>
-          prev.map((cb) => (cb.id === id ? json.data : cb))
-        );
+        setChargebacks((prev) => prev.map((cb) => (cb.id === id ? json.data : cb)));
       }
     } finally {
       setLoadingId(null);
@@ -86,20 +83,23 @@ export default function ChargebacksPage() {
   }
 
   return (
-    <div className="space-y-6 pb-4">
+    <div className="space-y-5 pb-4">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-            <ShieldAlert size={20} className="text-rose-500" />
+          <h1 className="text-xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <ShieldAlert size={20} style={{ color: '#F87171' }} />
             Chargebacks
           </h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             Final refund decisions — accept or reject within the deadline
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors">
+        <button
+          className="inline-flex items-center gap-2 text-xs font-semibold transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           <RefreshCw size={13} />
           Refresh
         </button>
@@ -108,17 +108,20 @@ export default function ChargebacksPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total Chargebacks', value: stats.total,          color: 'text-slate-800',  bg: 'bg-slate-50',  border: 'border-slate-100' },
-          { label: 'Pending Actions',   value: stats.pendingActions, color: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-100' },
-          { label: 'Accepted',          value: stats.accepted,       color: 'text-teal-700',   bg: 'bg-teal-50',   border: 'border-teal-100' },
-          { label: 'Rejected',          value: stats.rejected,       color: 'text-rose-700',   bg: 'bg-rose-50',   border: 'border-rose-100' },
+          { label: 'Total Chargebacks', value: stats.total,          color: 'var(--text-primary)', bg: 'rgba(255,255,255,0.04)',    border: 'var(--border)' },
+          { label: 'Pending Actions',   value: stats.pendingActions, color: '#FCD34D',              bg: 'rgba(252,211,77,0.08)',     border: 'rgba(252,211,77,0.2)' },
+          { label: 'Accepted',          value: stats.accepted,       color: '#34D399',              bg: 'rgba(52,211,153,0.08)',     border: 'rgba(52,211,153,0.2)' },
+          { label: 'Rejected',          value: stats.rejected,       color: '#F87171',              bg: 'rgba(248,113,113,0.08)',    border: 'rgba(248,113,113,0.2)' },
         ].map((s) => (
           <div
             key={s.label}
-            className={cn('rounded-xl border p-4', s.bg, s.border)}
+            className="rounded-xl p-4"
+            style={{ background: s.bg, border: `1px solid ${s.border}` }}
           >
-            <p className="text-xs text-slate-500 font-medium">{s.label}</p>
-            <p className={cn('text-2xl font-extrabold mt-1', s.color)}>{s.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+              {s.label}
+            </p>
+            <p className="text-2xl font-extrabold mt-1" style={{ color: s.color }}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -128,21 +131,22 @@ export default function ChargebacksPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <CardTitle className="flex items-center gap-2">
-              <Filter size={15} className="text-indigo-500" />
+              <Filter size={14} style={{ color: 'var(--primary)' }} />
               Chargeback Records
             </CardTitle>
-            {/* Status filter tabs */}
-            <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1 flex-wrap">
+            <div
+              className="flex items-center gap-0.5 rounded-xl p-1 flex-wrap"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}
+            >
               {STATUS_TABS.map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => setActiveStatus(tab.value)}
-                  className={cn(
-                    'px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                    activeStatus === tab.value
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  )}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: activeStatus === tab.value ? 'var(--primary)' : 'transparent',
+                    color: activeStatus === tab.value ? '#060C1A' : 'var(--text-secondary)',
+                  }}
                 >
                   {tab.label}
                 </button>
@@ -154,11 +158,12 @@ export default function ChargebacksPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100">
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   {['Chargeback ID', 'Dispute ID', 'Amount', 'Status', 'Deadline', 'Days Left', 'Actions'].map((h) => (
                     <th
                       key={h}
-                      className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-5 py-3 first:pl-6 last:pr-6"
+                      className="text-left text-[10px] font-bold uppercase tracking-wide px-5 py-3 first:pl-6 last:pr-6"
+                      style={{ color: 'var(--text-muted)' }}
                     >
                       {h}
                     </th>
@@ -168,36 +173,34 @@ export default function ChargebacksPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-slate-400 text-sm">
+                    <td colSpan={7} className="text-center py-12 text-sm" style={{ color: 'var(--text-muted)' }}>
                       No chargebacks found
                     </td>
                   </tr>
                 ) : (
                   filtered.map((cb, idx) => {
-                    const daysLeft = getDaysRemaining(cb.deadline);
+                    const daysLeft  = getDaysRemaining(cb.deadline);
                     const isPending = cb.status === 'PENDING';
                     const isLoading = loadingId === cb.id;
 
                     return (
                       <tr
                         key={cb.id}
-                        className={cn(
-                          'group transition-colors hover:bg-slate-50/70',
-                          idx !== filtered.length - 1 && 'border-b border-slate-50'
-                        )}
+                        className="table-row-dark"
+                        style={{ borderBottom: idx !== filtered.length - 1 ? '1px solid rgba(255,255,255,0.03)' : undefined }}
                       >
                         <td className="px-6 py-3.5">
-                          <span className="font-mono text-xs text-indigo-600 font-medium">
+                          <span className="font-mono text-xs font-medium" style={{ color: 'var(--primary)' }}>
                             {cb.id}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className="font-mono text-xs text-slate-600">
+                          <span className="font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>
                             {cb.disputeId}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className="font-semibold text-slate-800 text-xs">
+                          <span className="font-semibold text-xs" style={{ color: 'var(--text-primary)' }}>
                             {formatCurrency(cb.amount)}
                           </span>
                         </td>
@@ -207,21 +210,21 @@ export default function ChargebacksPage() {
                           </Badge>
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                          <span className="text-[11px] whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
                             {new Date(cb.deadline).toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
+                              day: '2-digit', month: 'short', year: 'numeric',
                             })}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className={cn(
-                            'text-xs font-semibold',
-                            isPending && daysLeft <= 3 ? 'text-rose-600' :
-                            isPending && daysLeft <= 7 ? 'text-amber-600' :
-                            'text-slate-500'
-                          )}>
+                          <span
+                            className="text-xs font-semibold"
+                            style={{
+                              color: isPending && daysLeft <= 3 ? '#F87171' :
+                                     isPending && daysLeft <= 7 ? '#FCD34D' :
+                                     'var(--text-muted)',
+                            }}
+                          >
                             {isPending ? `${daysLeft}d` : '—'}
                           </span>
                         </td>
@@ -231,7 +234,12 @@ export default function ChargebacksPage() {
                               <button
                                 onClick={() => handleAction(cb.id, 'ACCEPT')}
                                 disabled={isLoading}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors disabled:opacity-50"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50"
+                                style={{
+                                  background: 'rgba(52,211,153,0.12)',
+                                  color: '#34D399',
+                                  border: '1px solid rgba(52,211,153,0.25)',
+                                }}
                               >
                                 <CheckCircle size={11} />
                                 Accept
@@ -239,14 +247,19 @@ export default function ChargebacksPage() {
                               <button
                                 onClick={() => handleAction(cb.id, 'REJECT')}
                                 disabled={isLoading}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors disabled:opacity-50"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50"
+                                style={{
+                                  background: 'rgba(248,113,113,0.12)',
+                                  color: '#F87171',
+                                  border: '1px solid rgba(248,113,113,0.25)',
+                                }}
                               >
                                 <XCircle size={11} />
                                 Reject
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400">—</span>
+                            <span style={{ color: 'var(--text-muted)' }}>—</span>
                           )}
                         </td>
                       </tr>
@@ -256,8 +269,8 @@ export default function ChargebacksPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-3 border-t border-slate-100">
-            <span className="text-xs text-slate-400">
+          <div className="px-6 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Showing {filtered.length} of {resolvedChargebacks.length} chargebacks
             </span>
           </div>

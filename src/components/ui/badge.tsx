@@ -3,19 +3,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1.5 font-medium rounded-full",
+  "inline-flex items-center gap-1.5 font-semibold rounded-full border",
   {
     variants: {
       variant: {
-        default:  "bg-slate-100 text-slate-700",
-        success:  "bg-teal-50 text-teal-700",
-        error:    "bg-rose-50 text-rose-600",
-        warning:  "bg-amber-50 text-amber-700",
-        info:     "bg-indigo-50 text-indigo-700",
-        pending:  "bg-slate-100 text-slate-500",
+        default:  "bg-[rgba(255,255,255,0.06)] text-slate-300 border-[rgba(255,255,255,0.1)]",
+        success:  "bg-[rgba(52,211,153,0.12)] text-emerald-300 border-[rgba(52,211,153,0.25)]",
+        error:    "bg-[rgba(248,113,113,0.12)] text-rose-300 border-[rgba(248,113,113,0.25)]",
+        warning:  "bg-[rgba(252,211,77,0.12)] text-yellow-300 border-[rgba(252,211,77,0.25)]",
+        info:     "bg-[rgba(34,211,238,0.12)] text-cyan-300 border-[rgba(34,211,238,0.25)]",
+        pending:  "bg-[rgba(167,139,250,0.12)] text-violet-300 border-[rgba(167,139,250,0.25)]",
       },
       size: {
-        sm: "px-2 py-0.5 text-xs",
+        sm: "px-2 py-0.5 text-[11px]",
         md: "px-2.5 py-1 text-xs",
       },
     },
@@ -28,16 +28,13 @@ const badgeVariants = cva(
 
 const dotColors: Record<string, string> = {
   default: "bg-slate-400",
-  success: "bg-teal-500",
-  error:   "bg-rose-500",
-  warning: "bg-amber-500",
-  info:    "bg-indigo-500",
-  pending: "bg-slate-400",
+  success: "bg-emerald-400",
+  error:   "bg-rose-400",
+  warning: "bg-yellow-400",
+  info:    "bg-cyan-400",
+  pending: "bg-violet-400",
 };
 
-/**
- * Maps common payment status strings to badge variants.
- */
 export function paymentStatusVariant(
   status: string
 ): VariantProps<typeof badgeVariants>["variant"] {
@@ -46,6 +43,7 @@ export function paymentStatusVariant(
     succeeded:  "success",
     completed:  "success",
     active:     "success",
+    captured:   "success",
     failed:     "error",
     failure:    "error",
     declined:   "error",
@@ -53,8 +51,9 @@ export function paymentStatusVariant(
     pending:    "pending",
     processing: "info",
     initiated:  "info",
+    authorized: "info",
     cancelled:  "error",
-    expired:    "pending",
+    expired:    "default",
   };
   return map[status.toLowerCase()] ?? "default";
 }
@@ -73,12 +72,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       {...props}
     >
       {dot && (
-        <span
-          className={cn(
-            "status-dot shrink-0",
-            dotColors[variant ?? "default"]
-          )}
-        />
+        <span className={cn("status-dot shrink-0", dotColors[variant ?? "default"])} />
       )}
       {children}
     </span>
