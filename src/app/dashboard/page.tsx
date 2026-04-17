@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   DollarSign,
@@ -161,8 +161,59 @@ function txnBadgeVariant(
   return map[status] ?? 'default';
 }
 
+interface DashboardApiData {
+  kpi: {
+    totalRevenue:      number;
+    totalTransactions: number;
+    successRate:       number;
+    pendingPayouts:    number;
+    revenueChange:     number | null;
+    capturedCount:     number;
+    failedCount:       number;
+    pendingCount:      number;
+    refundedCount:     number;
+  };
+  disputes:   { total: number; pending: number; under_review: number; resolved: number };
+  chargebacks:{ total: number; pending: number; accepted: number; rejected: number; expired: number };
+  txnStatusDistribution: { status: string; count: number }[];
+  recentTransactions:    { id: string; amount: number; status: string; gateway: string; customerEmail: string | null; createdAt: string }[];
+}
+
 export default function DashboardPage() {
   const [activePeriod, setActivePeriod] = useState<Period>('30D');
+  const [apiData, setApiData] = useState<DashboardApiData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v1/analytics/dashboard', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setApiData(json.data); })
+      .catch(() => {});
+  }, []);
+
+  // KPI values — real API data with mock fallback
+  const kpi = apiData?.kpi ?? {
+    totalRevenue:      mockDashboardKPI.totalRevenue,
+    totalTransactions: mockDashboardKPI.totalTransactions,
+    successRate:       mockDashboardKPI.successRate,
+    pendingPayouts:    mockDashboardKPI.pendingPayouts,
+    revenueChange:     mockDashboardKPI.revenueChange,
+    capturedCount:     0,
+    failedCount:       0,
+    pendingCount:      0,
+    refundedCount:     0,
+  };
+
+  const txnStatusDistribution = apiData?.txnStatusDistribution ?? mockTransactionStatusData.map((d) => ({ status: d.status, count: d.count }));
+  const totalTxnCount = txnStatusDistribution.reduce((s, d) => s + d.count, 0) || 1;
+
+  const disputeStats = useMemo(() => ({
+    total:          apiData?.disputes.total          ?? mockDisputes.length,
+    pending:        apiData?.disputes.pending        ?? mockDisputes.filter((d) => d.status === 'PENDING').length,
+    totalCb:        apiData?.chargebacks.total       ?? mockChargebacks.length,
+    pendingActions: apiData?.chargebacks.pending     ?? mockChargebacks.filter((cb) => cb.status === 'PENDING').length,
+  }), [apiData]);
+
+  const recentTxns = apiData?.recentTransactions ?? mockTransactions.slice(0, 5);
 
   const chartData = useMemo(() => {
     const count = activePeriod === '7D' ? 7 : activePeriod === '30D' ? 30 : 90;
@@ -189,17 +240,6 @@ export default function DashboardPage() {
     percentage: m.percentage,
     color: METHOD_COLORS[m.method],
   }));
-
-  const totalTxnCount = mockTransactionStatusData.reduce((s, d) => s + d.count, 0);
-
-  const disputeStats = useMemo(() => ({
-    total:          mockDisputes.length,
-    pending:        mockDisputes.filter((d) => d.status === 'PENDING').length,
-    totalCb:        mockChargebacks.length,
-    pendingActions: mockChargebacks.filter((cb) => cb.status === 'PENDING').length,
-  }), []);
-
-  const recentTxns = mockTransactions.slice(0, 5);
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-GB', {
@@ -267,14 +307,14 @@ export default function DashboardPage() {
               className="hidden sm:flex flex-col items-center px-4 py-3 rounded-xl"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              <span className="text-xl font-extrabold tabular-nums gradient-text-cyan">94.2%</span>
+              <span className="text-xl font-extrabold tabular-nums gradient-text-cyan">{kpi.successRate}%</span>
               <span className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Success Rate</span>
             </div>
             <div
               className="hidden sm:flex flex-col items-center px-4 py-3 rounded-xl"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              <span className="text-xl font-extrabold tabular-nums" style={{ color: 'var(--text-primary)' }}>1,247</span>
+              <span className="text-xl font-extrabold tabular-nums" style={{ color: 'var(--text-primary)' }}>{kpi.totalTransactions.toLocaleString('en-IN')}</span>
               <span className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Total Txns</span>
             </div>
             <button
@@ -295,8 +335,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Revenue"
-          value={formatCurrency(mockDashboardKPI.totalRevenue)}
-          change={mockDashboardKPI.revenueChange}
+          value={formatCurrency(kpi.totalRevenue)}
+          change={kpi.revenueChange ?? undefined}
           icon={<DollarSign size={15} style={{ color: '#22D3EE' }} />}
           accentFrom="#22D3EE" accentTo="#A78BFA"
           glowColor="rgba(34,211,238,0.12)"
@@ -304,8 +344,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Total Transactions"
-          value={mockDashboardKPI.totalTransactions.toLocaleString('en-IN')}
-          change={mockDashboardKPI.transactionChange}
+          value={kpi.totalTransactions.toLocaleString('en-IN')}
           icon={<ArrowLeftRight size={15} style={{ color: '#A78BFA' }} />}
           accentFrom="#A78BFA" accentTo="#22D3EE"
           glowColor="rgba(167,139,250,0.12)"
@@ -313,8 +352,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Success Rate"
-          value={`${mockDashboardKPI.successRate}%`}
-          change={2.1}
+          value={`${kpi.successRate}%`}
           icon={<CheckCircle size={15} style={{ color: '#34D399' }} />}
           accentFrom="#34D399" accentTo="#22D3EE"
           glowColor="rgba(52,211,153,0.12)"
@@ -322,7 +360,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Pending Payouts"
-          value={formatCurrency(mockDashboardKPI.pendingPayouts)}
+          value={formatCurrency(kpi.pendingPayouts)}
           icon={<Clock size={15} style={{ color: '#FCD34D' }} />}
           accentFrom="#FCD34D" accentTo="#F87171"
           glowColor="rgba(252,211,77,0.10)"
@@ -523,7 +561,7 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
-                    data={mockTransactionStatusData}
+                    data={txnStatusDistribution}
                     dataKey="count"
                     nameKey="status"
                     cx="50%"
@@ -533,7 +571,7 @@ export default function DashboardPage() {
                     paddingAngle={2}
                     strokeWidth={0}
                   >
-                    {mockTransactionStatusData.map((entry) => (
+                    {txnStatusDistribution.map((entry) => (
                       <Cell key={entry.status} fill={STATUS_CHART_COLORS[entry.status] ?? '#2D3748'} />
                     ))}
                   </Pie>
@@ -558,7 +596,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
-              {mockTransactionStatusData.map((entry) => {
+              {txnStatusDistribution.map((entry) => {
                 const pct = ((entry.count / totalTxnCount) * 100).toFixed(1);
                 return (
                   <div key={entry.status} className="flex items-center gap-2">
@@ -671,7 +709,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Success Rate</span>
                   <span className="text-sm font-extrabold" style={{ color: '#34D399' }}>
-                    {mockSystemPerformance.successRate}%
+                    {kpi.successRate}%
                   </span>
                 </div>
                 <div
@@ -681,14 +719,14 @@ export default function DashboardPage() {
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: `${mockSystemPerformance.successRate}%`,
+                      width: `${kpi.successRate}%`,
                       background: 'linear-gradient(90deg, #34D399, #22D3EE)',
                     }}
                   />
                 </div>
               </div>
               <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                Last updated: {formatRelativeTime(mockSystemPerformance.lastUpdated)}
+                Last updated: just now
               </p>
             </div>
 
@@ -708,7 +746,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <span className="text-xl font-extrabold" style={{ color: '#F87171' }}>
-                  {mockSystemPerformance.failedTransactions}
+                  {kpi.failedCount}
                 </span>
               </div>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>This period</p>
@@ -820,7 +858,7 @@ export default function DashboardPage() {
               style={{ borderTop: '1px solid var(--border)' }}
             >
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Showing 5 of {mockTransactions.length} transactions
+                Showing 5 of {kpi.totalTransactions || recentTxns.length} transactions
               </span>
               <Link
                 href="/dashboard/transactions"

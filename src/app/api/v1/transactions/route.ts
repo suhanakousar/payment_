@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mockTransactions } from '@/lib/mock-data';
-import type { Transaction } from '@/types';
+import prisma from '@/lib/prisma';
+
+const meta = () => ({ request_id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString() });
 
 // ─── GET /api/v1/transactions ─────────────────────────────────────────────────
-// Extended version of payments GET with additional filters.
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
 
@@ -11,80 +11,95 @@ export async function GET(req: NextRequest) {
   const per_page    = Math.min(100, Math.max(1, parseInt(searchParams.get('per_page') ?? '10', 10)));
   const status      = searchParams.get('status')?.toUpperCase();
   const gateway     = searchParams.get('gateway')?.toUpperCase();
-  const method      = searchParams.get('method')?.toLowerCase();
   const search      = searchParams.get('search')?.toLowerCase();
   const from        = searchParams.get('from');
   const to          = searchParams.get('to');
   const min_amount  = searchParams.get('min_amount') ? Number(searchParams.get('min_amount')) : null;
   const max_amount  = searchParams.get('max_amount') ? Number(searchParams.get('max_amount')) : null;
-  const sort        = searchParams.get('sort') ?? '-createdAt';
   const merchant_id = searchParams.get('merchant_id');
   const currency    = searchParams.get('currency')?.toUpperCase();
-  const has_refund  = searchParams.get('has_refund');   // 'true' | 'false'
+  const has_refund  = searchParams.get('has_refund');
 
-  let filtered: Transaction[] = [...mockTransactions];
+  try {
+    const where: Record<string, unknown> = {};
 
-  // Apply filters
-  if (status)      filtered = filtered.filter(t => t.status === status);
-  if (gateway)     filtered = filtered.filter(t => t.gateway === gateway);
-  if (method)      filtered = filtered.filter(t => t.paymentMethod === method);
-  if (currency)    filtered = filtered.filter(t => t.currency === currency);
-  if (merchant_id) filtered = filtered.filter(t => t.merchantId === merchant_id);
-  if (from)        filtered = filtered.filter(t => new Date(t.createdAt) >= new Date(from));
-  if (to)          filtered = filtered.filter(t => new Date(t.createdAt) <= new Date(to));
-  if (min_amount !== null) filtered = filtered.filter(t => t.amount >= min_amount);
-  if (max_amount !== null) filtered = filtered.filter(t => t.amount <= max_amount);
-  if (has_refund === 'true') {
-    filtered = filtered.filter(t =>
-      t.status === 'REFUNDED' || t.status === 'PARTIALLY_REFUNDED'
-    );
-  } else if (has_refund === 'false') {
-    filtered = filtered.filter(t =>
-      t.status !== 'REFUNDED' && t.status !== 'PARTIALLY_REFUNDED'
+    if (status) {
+      if (has_refund === 'true') {
+        where.status = { in: ['REFUNDED', 'PARTIALLY_REFUNDED'] };
+      } else {
+        where.status = status;
+      }
+    } else if (has_refund === 'true') {
+      where.status = { in: ['REFUNDED', 'PARTIALLY_REFUNDED'] };
+    } else if (has_refund === 'false') {
+      where.status = { notIn: ['REFUNDED', 'PARTIALLY_REFUNDED'] };
+    }
+
+    if (gateway)     where.gateway    = gateway;
+    if (currency)    where.currency   = currency;
+    if (merchant_id) where.merchantId = merchant_id;
+
+    if (from || to) {
+      where.createdAt = {};
+      if (from) (where.createdAt as Record<string, unknown>).gte = new Date(from);
+      if (to)   (where.createdAt as Record<string, unknown>).lte = new Date(to);
+    }
+    if (min_amount !== null || max_amount !== null) {
+      where.amount = {};
+      if (min_amount !== null) (where.amount as Record<string, unknown>).gte = min_amount;
+      if (max_amount !== null) (where.amount as Record<string, unknown>).lte = max_amount;
+    }
+    if (search) {
+      where.OR = [
+        { id:               { contains: search, mode: 'insensitive' } },
+        { customerEmail:    { contains: search, mode: 'insensitive' } },
+        { customerPhone:    { contains: search } },
+        { gatewayOrderId:   { contains: search, mode: 'insensitive' } },
+        { gatewayPaymentId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, rows] = await Promise.all([
+      prisma.transaction.count({ where }),
+      prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip:    (page - 1) * per_page,
+        take:    per_page,
+      }),
+    ]);
+
+    const data = rows.map((t) => ({ ...t, amount: Number(t.amount) }));
+
+    // Summary aggregates
+    const [aggCaptured, aggFailed, aggPending, aggRefunded, aggTotal] = await Promise.all([
+      prisma.transaction.aggregate({ where: { ...where, status: 'CAPTURED' }, _sum: { amount: true }, _count: true }),
+      prisma.transaction.count({ where: { ...where, status: 'FAILED' } }),
+      prisma.transaction.count({ where: { ...where, status: 'PENDING' } }),
+      prisma.transaction.count({ where: { ...where, status: { in: ['REFUNDED', 'PARTIALLY_REFUNDED'] } } }),
+      prisma.transaction.aggregate({ where, _sum: { amount: true } }),
+    ]);
+
+    const summary = {
+      total_amount:   Number(aggTotal._sum.amount ?? 0),
+      captured_count: aggCaptured._count,
+      failed_count:   aggFailed,
+      pending_count:  aggPending,
+      refunded_count: aggRefunded,
+    };
+
+    return NextResponse.json({
+      success: true,
+      data,
+      summary,
+      pagination: { page, per_page, total, pages: Math.ceil(total / per_page) },
+      meta: meta(),
+    });
+  } catch (err) {
+    console.error('[GET /transactions]', err);
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
+      { status: 500 }
     );
   }
-  if (search) {
-    filtered = filtered.filter(t =>
-      t.id.toLowerCase().includes(search) ||
-      t.customerEmail?.toLowerCase().includes(search) ||
-      t.customerPhone?.includes(search) ||
-      t.gatewayOrderId?.toLowerCase().includes(search) ||
-      t.gatewayPaymentId?.toLowerCase().includes(search) ||
-      (t.metadata as Record<string, string>)?.orderId?.toLowerCase().includes(search)
-    );
-  }
-
-  // Apply sort
-  const sortField = sort.startsWith('-') ? sort.slice(1) : sort;
-  const sortDir   = sort.startsWith('-') ? -1 : 1;
-  filtered.sort((a, b) => {
-    const av = ((a as unknown) as Record<string, unknown>)[sortField] as string | number ?? '';
-    const bv = ((b as unknown) as Record<string, unknown>)[sortField] as string | number ?? '';
-    return av < bv ? -sortDir : av > bv ? sortDir : 0;
-  });
-
-  // Aggregate summary counts
-  const summary = {
-    total_amount:   filtered.reduce((sum, t) => sum + t.amount, 0),
-    captured_count: filtered.filter(t => t.status === 'CAPTURED').length,
-    failed_count:   filtered.filter(t => t.status === 'FAILED').length,
-    pending_count:  filtered.filter(t => t.status === 'PENDING').length,
-    refunded_count: filtered.filter(t =>
-      t.status === 'REFUNDED' || t.status === 'PARTIALLY_REFUNDED'
-    ).length,
-  };
-
-  // Paginate
-  const total  = filtered.length;
-  const pages  = Math.ceil(total / per_page);
-  const offset = (page - 1) * per_page;
-  const data   = filtered.slice(offset, offset + per_page);
-
-  return NextResponse.json({
-    success: true,
-    data,
-    summary,
-    pagination: { page, per_page, total, pages },
-    meta: { request_id: `req_${Date.now()}`, timestamp: new Date().toISOString() },
-  });
 }

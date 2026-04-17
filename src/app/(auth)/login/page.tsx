@@ -146,6 +146,8 @@ export default function LoginPage() {
     }
   }, [activeTab]);
 
+  const [loginError, setLoginError] = useState<string>('');
+
   // ── Email sign-in ──────────────────────────────────────────────────────────
   const validateEmail = () => {
     const errs: typeof emailErrors = {};
@@ -160,8 +162,25 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validateEmail()) return;
     setLoadingSubmit(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    router.push('/dashboard');
+    setLoginError('');
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method:      'POST',
+        headers:     { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body:        JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setLoginError(data.error?.message ?? 'Login failed. Please try again.');
+        setLoadingSubmit(false);
+        return;
+      }
+      router.push('/dashboard');
+    } catch {
+      setLoginError('Network error. Please check your connection.');
+      setLoadingSubmit(false);
+    }
   };
 
   // ── Phone sign-in ──────────────────────────────────────────────────────────
@@ -255,6 +274,11 @@ export default function LoginPage() {
       >
         {activeTab === 'email' && (
           <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
+            {loginError && (
+              <div className="rounded-lg px-4 py-3 text-sm font-medium text-red-700 bg-red-50 border border-red-200">
+                {loginError}
+              </div>
+            )}
             <Input
               label="Email address"
               type="email"

@@ -1,74 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { mockChargebacks, mockDisputes } from '@/lib/mock-data';
-import type { Chargeback, ChargebackStatus } from '@/types';
+import prisma from '@/lib/prisma';
+
+const meta = () => ({ requestId: crypto.randomUUID(), timestamp: new Date().toISOString() });
 
 const createChargebackSchema = z.object({
-  disputeId: z.string().min(1),
+  disputeId:    z.string().min(1, 'disputeId is required'),
   deadlineDays: z.number().int().min(7).max(15).default(10),
 });
 
-let chargebacks: Chargeback[] = [...mockChargebacks];
-const disputes = [...mockDisputes];
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status') as ChargebackStatus | null;
-  const page = parseInt(searchParams.get('page') ?? '1', 10);
-  const perPage = parseInt(searchParams.get('perPage') ?? '20', 10);
+  const status  = searchParams.get('status')?.toUpperCase();
+  const page    = Math.max(1, parseInt(searchParams.get('page')    ?? '1',  10));
+  const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get('perPage') ?? '20', 10)));
 
-  let filtered = [...chargebacks];
+  try {
+    // Auto-expire overdue PENDING chargebacks before returning results
+    await prisma.chargeback.updateMany({
+      where: { status: 'PENDING', deadline: { lt: new Date() } },
+      data:  { status: 'EXPIRED' },
+    });
 
-  const now = new Date();
-  filtered = filtered.map((cb) => {
-    if (cb.status === 'PENDING' && new Date(cb.deadline) < now) {
-      return { ...cb, status: 'EXPIRED' as ChargebackStatus, updatedAt: now.toISOString() };
-    }
-    return cb;
-  });
+    const where: Record<string, unknown> = {};
+    if (status) where.status = status;
 
-  if (status) {
-    filtered = filtered.filter((cb) => cb.status === status);
+    const [total, rows] = await Promise.all([
+      prisma.chargeback.count({ where }),
+      prisma.chargeback.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip:    (page - 1) * perPage,
+        take:    perPage,
+        include: { dispute: { select: { id: true, reason: true, transactionId: true } } },
+      }),
+    ]);
+
+    const data = rows.map((cb) => ({ ...cb, amount: Number(cb.amount) }));
+
+    return NextResponse.json({
+      success: true, data, meta: meta(),
+      pagination: { page, perPage, total, pages: Math.ceil(total / perPage) },
+    });
+  } catch (err) {
+    console.error('[GET /chargebacks]', err);
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
+      { status: 500 }
+    );
   }
-
-  filtered.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const total = filtered.length;
-  const pages = Math.ceil(total / perPage);
-  const data = filtered.slice((page - 1) * perPage, page * perPage);
-
-  return NextResponse.json({
-    success: true,
-    data,
-    meta: { requestId: crypto.randomUUID(), timestamp: new Date().toISOString() },
-    pagination: { page, perPage, total, pages },
-  });
 }
 
 export async function POST(req: NextRequest) {
+  let body: unknown;
+  try { body = await req.json(); } catch {
+    return NextResponse.json(
+      { success: false, error: { code: 'INVALID_JSON', message: 'Invalid JSON body' } },
+      { status: 400 }
+    );
+  }
+
+  const parsed = createChargebackSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid request body', details: parsed.error.flatten().fieldErrors } },
+      { status: 400 }
+    );
+  }
+
+  const { disputeId, deadlineDays } = parsed.data;
+
   try {
-    const body = await req.json();
-    const parsed = createChargebackSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request body',
-            details: parsed.error.flatten().fieldErrors,
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    const { disputeId, deadlineDays } = parsed.data;
-
-    const dispute = disputes.find((d) => d.id === disputeId);
+    const dispute = await prisma.dispute.findUnique({ where: { id: disputeId } });
     if (!dispute) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Dispute not found' } },
@@ -76,46 +79,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingCb = chargebacks.find((cb) => cb.disputeId === disputeId);
+    const existingCb = await prisma.chargeback.findUnique({ where: { disputeId } });
     if (existingCb) {
       return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'DUPLICATE_CHARGEBACK',
-            message: 'A chargeback already exists for this dispute',
-          },
-        },
+        { success: false, error: { code: 'DUPLICATE_CHARGEBACK', message: 'A chargeback already exists for this dispute' } },
         { status: 409 }
       );
     }
 
-    const now = new Date();
-    const deadline = new Date(now);
+    const deadline = new Date();
     deadline.setDate(deadline.getDate() + deadlineDays);
 
-    const newChargeback: Chargeback = {
-      id: `cbk_${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`,
-      disputeId,
-      transactionId: dispute.transactionId,
-      amount: dispute.amount,
-      status: 'PENDING',
-      deadline: deadline.toISOString(),
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    chargebacks.unshift(newChargeback);
+    const chargeback = await prisma.chargeback.create({
+      data: {
+        disputeId,
+        transactionId: dispute.transactionId,
+        amount:        dispute.amount,
+        status:        'PENDING',
+        deadline,
+      },
+    });
 
     return NextResponse.json(
-      {
-        success: true,
-        data: newChargeback,
-        meta: { requestId: crypto.randomUUID(), timestamp: now.toISOString() },
-      },
+      { success: true, data: { ...chargeback, amount: Number(chargeback.amount) }, meta: meta() },
       { status: 201 }
     );
-  } catch {
+  } catch (err) {
+    console.error('[POST /chargebacks]', err);
     return NextResponse.json(
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
       { status: 500 }
