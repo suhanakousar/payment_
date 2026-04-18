@@ -32,17 +32,6 @@ import {
   Bar,
 } from 'recharts';
 
-import {
-  mockDashboardKPI,
-  mockRevenueData,
-  mockTransactions,
-  mockPaymentMethodBreakdown,
-  mockTransactionStatusData,
-  mockRecentActivity,
-  mockDisputes,
-  mockChargebacks,
-  mockSystemPerformance,
-} from '@/lib/mock-data';
 import { cn, formatCurrency, formatRelativeTime } from '@/lib/utils';
 import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -176,12 +165,15 @@ interface DashboardApiData {
   disputes:   { total: number; pending: number; under_review: number; resolved: number };
   chargebacks:{ total: number; pending: number; accepted: number; rejected: number; expired: number };
   txnStatusDistribution: { status: string; count: number }[];
-  recentTransactions:    { id: string; amount: number; status: string; gateway: string; customerEmail: string | null; createdAt: string }[];
+  recentTransactions:    { id: string; amount: number; status: string; gateway: string; paymentMethod?: string; customerEmail: string | null; createdAt: string }[];
 }
+
+interface RevenuePoint { date: string; revenue: number; payouts: number; }
 
 export default function DashboardPage() {
   const [activePeriod, setActivePeriod] = useState<Period>('30D');
   const [apiData, setApiData] = useState<DashboardApiData | null>(null);
+  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
 
   useEffect(() => {
     fetch('/api/v1/analytics/dashboard', { credentials: 'include' })
@@ -190,56 +182,58 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  // KPI values — real API data with mock fallback
+  useEffect(() => {
+    const period = activePeriod === '7D' ? '7d' : activePeriod === '30D' ? '30d' : '90d';
+    fetch(`/api/v1/analytics/revenue?period=${period}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setRevenueData(json.data.data_points ?? []); })
+      .catch(() => {});
+  }, [activePeriod]);
+
   const kpi = apiData?.kpi ?? {
-    totalRevenue:      mockDashboardKPI.totalRevenue,
-    totalTransactions: mockDashboardKPI.totalTransactions,
-    successRate:       mockDashboardKPI.successRate,
-    pendingPayouts:    mockDashboardKPI.pendingPayouts,
-    revenueChange:     mockDashboardKPI.revenueChange,
+    totalRevenue:      0,
+    totalTransactions: 0,
+    successRate:       0,
+    pendingPayouts:    0,
+    revenueChange:     null,
     capturedCount:     0,
     failedCount:       0,
     pendingCount:      0,
     refundedCount:     0,
   };
 
-  const txnStatusDistribution = apiData?.txnStatusDistribution ?? mockTransactionStatusData.map((d) => ({ status: d.status, count: d.count }));
+  const txnStatusDistribution = apiData?.txnStatusDistribution ?? [];
   const totalTxnCount = txnStatusDistribution.reduce((s, d) => s + d.count, 0) || 1;
 
   const disputeStats = useMemo(() => ({
-    total:          apiData?.disputes.total          ?? mockDisputes.length,
-    pending:        apiData?.disputes.pending        ?? mockDisputes.filter((d) => d.status === 'PENDING').length,
-    totalCb:        apiData?.chargebacks.total       ?? mockChargebacks.length,
-    pendingActions: apiData?.chargebacks.pending     ?? mockChargebacks.filter((cb) => cb.status === 'PENDING').length,
+    total:          apiData?.disputes.total          ?? 0,
+    pending:        apiData?.disputes.pending        ?? 0,
+    totalCb:        apiData?.chargebacks.total       ?? 0,
+    pendingActions: apiData?.chargebacks.pending     ?? 0,
   }), [apiData]);
 
-  const recentTxns = apiData?.recentTransactions ?? mockTransactions.slice(0, 5);
+  const recentTxns = apiData?.recentTransactions ?? [];
 
-  const chartData = useMemo(() => {
-    const count = activePeriod === '7D' ? 7 : activePeriod === '30D' ? 30 : 90;
-    const base = mockRevenueData.slice(-Math.min(count, mockRevenueData.length));
-    if (activePeriod === '90D' && mockRevenueData.length < 90) {
-      const repeated = [...base, ...base, ...base].slice(0, 90);
-      return repeated.map((d, i) => ({
-        ...d,
-        date: new Date(
-          new Date(base[0].date).getTime() + i * 86400000
-        ).toISOString().slice(0, 10),
-      }));
-    }
-    return base;
-  }, [activePeriod]);
+  const chartData = revenueData;
 
   const formatXAxis = (value: string) => {
     const d = new Date(value);
     return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
   };
 
-  const methodChartData = mockPaymentMethodBreakdown.map((m) => ({
-    name: m.method.charAt(0).toUpperCase() + m.method.slice(1),
-    percentage: m.percentage,
-    color: METHOD_COLORS[m.method],
-  }));
+  const methodChartData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    recentTxns.forEach((t) => {
+      const m = (t as { paymentMethod?: string }).paymentMethod ?? 'other';
+      counts[m] = (counts[m] || 0) + 1;
+    });
+    const total = Object.values(counts).reduce((s, v) => s + v, 0) || 1;
+    return Object.entries(counts).map(([method, count]) => ({
+      name: method.charAt(0).toUpperCase() + method.slice(1),
+      percentage: Math.round((count / total) * 100),
+      color: METHOD_COLORS[method] ?? '#64748B',
+    }));
+  }, [recentTxns]);
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-GB', {
@@ -660,9 +654,9 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
             <div className="mt-3 flex flex-wrap gap-2">
-              {mockPaymentMethodBreakdown.map((m) => (
+              {methodChartData.map((m) => (
                 <span
-                  key={m.method}
+                  key={m.name}
                   className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
                   style={{
                     background: 'rgba(255,255,255,0.04)',
@@ -670,10 +664,13 @@ export default function DashboardPage() {
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: METHOD_COLORS[m.method] }} />
-                  {m.method.charAt(0).toUpperCase() + m.method.slice(1)}: {m.count.toLocaleString('en-IN')}
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: m.color }} />
+                  {m.name}: {m.percentage}%
                 </span>
               ))}
+              {methodChartData.length === 0 && (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>No transaction data yet</span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -768,7 +765,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <span className="text-xl font-extrabold" style={{ color: '#22D3EE' }}>
-                  {mockSystemPerformance.avgProcessingTimeMs}ms
+                  850ms
                 </span>
               </div>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Average per transaction</p>
@@ -882,50 +879,38 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-3">
             <div className="space-y-0">
-              {mockRecentActivity.map((item, idx) => (
-                <div key={item.id} className="relative flex gap-3">
-                  {idx !== mockRecentActivity.length - 1 && (
-                    <span
-                      className="absolute left-[4.5px] top-5 bottom-0 w-px"
-                      style={{ background: 'var(--border)' }}
-                    />
-                  )}
-                  <ActivityDot severity={item.severity} />
-                  <div className="flex-1 pb-4 min-w-0">
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                      {item.message}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                        {formatRelativeTime(item.timestamp)}
-                      </span>
-                      {item.type !== 'system' && (
+              {recentTxns.length === 0 && (
+                <p className="text-xs py-4 text-center" style={{ color: 'var(--text-muted)' }}>No recent activity</p>
+              )}
+              {recentTxns.map((txn, idx) => {
+                const severity: RecentActivity['severity'] =
+                  txn.status === 'CAPTURED'   ? 'success' :
+                  txn.status === 'FAILED'     ? 'error'   :
+                  txn.status === 'PENDING'    ? 'warning' : 'info';
+                const msg = `Payment of ${formatCurrency(txn.amount)} ${txn.status.toLowerCase()} via ${txn.gateway}${txn.customerEmail ? ` — ${txn.customerEmail}` : ''}`;
+                return (
+                  <div key={txn.id} className="relative flex gap-3">
+                    {idx !== recentTxns.length - 1 && (
+                      <span className="absolute left-[4.5px] top-5 bottom-0 w-px" style={{ background: 'var(--border)' }} />
+                    )}
+                    <ActivityDot severity={severity} />
+                    <div className="flex-1 pb-4 min-w-0">
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{msg}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                          {formatRelativeTime(txn.createdAt)}
+                        </span>
                         <span
                           className="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5"
-                          style={{
-                            background:
-                              item.type === 'payment'  ? 'rgba(34,211,238,0.12)'  :
-                              item.type === 'payout'   ? 'rgba(52,211,153,0.12)'  :
-                              item.type === 'webhook'  ? 'rgba(252,211,77,0.12)'  :
-                              item.type === 'alert'    ? 'rgba(248,113,113,0.12)' :
-                              item.type === 'kyc'      ? 'rgba(167,139,250,0.12)' :
-                              'rgba(255,255,255,0.06)',
-                            color:
-                              item.type === 'payment'  ? '#22D3EE' :
-                              item.type === 'payout'   ? '#34D399' :
-                              item.type === 'webhook'  ? '#FCD34D' :
-                              item.type === 'alert'    ? '#F87171' :
-                              item.type === 'kyc'      ? '#A78BFA' :
-                              'var(--text-muted)',
-                          }}
+                          style={{ background: 'rgba(34,211,238,0.12)', color: '#22D3EE' }}
                         >
-                          {item.type}
+                          payment
                         </span>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
