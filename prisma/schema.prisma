@@ -108,6 +108,7 @@ model User {
   email        String     @unique
   phone        String?    @unique
   passwordHash String
+  firebaseUid  String?    @unique
   role         UserRole   @default(MERCHANT_ADMIN)
   status       UserStatus @default(PENDING_VERIFICATION)
   lastLoginAt  DateTime?

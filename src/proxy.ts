@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/api/v1/auth/login',
   '/api/v1/auth/register',
+  '/api/v1/auth/firebase',
   '/api/v1/setup/seed',
   '/api/v1/webhooks/razorpay',
   '/api/health',
