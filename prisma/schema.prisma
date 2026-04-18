@@ -29,6 +29,10 @@ enum UserStatus {
   PENDING_VERIFICATION
 }
 
+enum OtpPurpose {
+  REGISTER
+}
+
 enum KycStatus {
   PENDING
   VERIFIED
@@ -100,6 +104,7 @@ enum PayoutStatus {
 model User {
   id           String     @id @default(cuid())
   merchantId   String?
+  fullName     String?
   email        String     @unique
   phone        String?    @unique
   passwordHash String
@@ -117,6 +122,21 @@ model User {
   @@index([email])
   @@index([status])
   @@map("users")
+}
+
+model VerificationCode {
+  id         String     @id @default(cuid())
+  email      String
+  codeHash   String
+  purpose    OtpPurpose
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int        @default(0)
+  createdAt  DateTime   @default(now())
+
+  @@index([email, purpose, createdAt])
+  @@index([expiresAt])
+  @@map("verification_codes")
 }
 
 model Merchant {

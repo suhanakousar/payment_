@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { OtpPurpose } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, signAccessToken, signRefreshToken } from '@/lib/auth';
+import { verifyOtp } from '@/lib/otp';
 import { rateLimit } from '@/lib/ratelimit';
 
 const registerSchema = z.object({
   business_name: z.string().min(2, 'Business name must be at least 2 characters'),
+  full_name:     z.string().min(2, 'Full name must be at least 2 characters'),
   email:         z.string().email('Invalid email address'),
   password:      z.string().min(8, 'Password must be at least 8 characters'),
   phone:         z.string().min(10, 'Invalid phone number').optional(),
+  pan:           z.string().trim().toUpperCase().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Invalid PAN').optional(),
+  gstin:         z.string().trim().toUpperCase().min(15, 'Invalid GSTIN').optional().or(z.literal('')),
+  otp:           z.string().length(6, 'OTP must be 6 digits'),
 });
 
 const meta = () => ({ request_id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString() });
@@ -39,7 +45,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { business_name, email, password, phone } = parsed.data;
+  const { business_name, full_name, email, password, phone, pan, gstin, otp } = parsed.data;
 
   try {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
@@ -53,18 +59,30 @@ export async function POST(req: NextRequest) {
     const passwordHash = await hashPassword(password);
 
     const result = await prisma.$transaction(async (tx) => {
+      const otpResult = await verifyOtp(tx, email, OtpPurpose.REGISTER, otp);
+      if (!otpResult.ok) {
+        throw new Error(otpResult.code);
+      }
+
       const merchant = await tx.merchant.create({
-        data: { businessName: business_name, kycStatus: 'PENDING', tier: 'STARTER' },
+        data: {
+          businessName: business_name,
+          pan: pan || null,
+          gstin: gstin || null,
+          kycStatus: 'PENDING',
+          tier: 'STARTER',
+        },
       });
 
       const user = await tx.user.create({
         data: {
           merchantId:   merchant.id,
+          fullName:     full_name,
           email:        email.toLowerCase().trim(),
           phone:        phone ?? null,
           passwordHash,
           role:         'MERCHANT_ADMIN',
-          status:       'PENDING_VERIFICATION',
+          status:       'ACTIVE',
         },
       });
 
@@ -84,6 +102,7 @@ export async function POST(req: NextRequest) {
           expires_in:    900,
           user: {
             id:          result.user.id,
+            full_name:   result.user.fullName,
             email:       result.user.email,
             phone:       result.user.phone,
             role:        result.user.role,
@@ -113,6 +132,21 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err) {
+    if (err instanceof Error) {
+      const otpErrors: Record<string, { status: number; message: string }> = {
+        OTP_NOT_FOUND: { status: 400, message: 'No verification code found. Request a new OTP.' },
+        OTP_EXPIRED: { status: 400, message: 'Your verification code expired. Request a new OTP.' },
+        OTP_INVALID: { status: 400, message: 'The verification code is incorrect.' },
+        OTP_TOO_MANY_ATTEMPTS: { status: 429, message: 'Too many incorrect OTP attempts. Request a new code.' },
+      };
+      const mapped = otpErrors[err.message];
+      if (mapped) {
+        return NextResponse.json(
+          { success: false, error: { code: err.message, message: mapped.message }, meta: meta() },
+          { status: mapped.status }
+        );
+      }
+    }
     console.error('[auth/register]', err);
     return NextResponse.json(
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }, meta: meta() },

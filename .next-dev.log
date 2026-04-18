@@ -1,52 +1,253 @@
 
 > payment_@0.1.0 dev
-> next dev
+> next dev --webpack -p 5000 -H 0.0.0.0
 
-Γû▓ Next.js 16.2.3 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.19.1:3000
+Γû▓ Next.js 16.2.3 (webpack)
+- Local:         http://localhost:5000
+- Network:       http://0.0.0.0:5000
 - Environments: .env
-Γ£ô Ready in 14.7s
-ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
- We detected multiple lockfiles and selected the directory of C:\Users\arshiya\package-lock.json as the root directory.
- To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
-   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
- Detected additional lockfiles: 
-   * C:\Users\arshiya\payment_\package-lock.json
-
+Γ£ô Ready in 17.9s
+[instrumentation] Chargeback expiry cron registered (every 5 min)
 
 Γùï Compiling / ...
- GET / 307 in 12.8s (next.js: 12.7s, application-code: 181ms)
+ GET / 200 in 736ms (next.js: 21ms, proxy.ts: 357ms, application-code: 358ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /login 200 in 3.2s (next.js: 3.0s, proxy.ts: 19ms, application-code: 182ms)
+Γùï Compiling /register ...
+ GET /register 200 in 12.7s (next.js: 12.5s, proxy.ts: 19ms, application-code: 142ms)
+ GET /register 200 in 115ms (next.js: 16ms, proxy.ts: 23ms, application-code: 76ms)
+ GET /register 200 in 155ms (next.js: 12ms, proxy.ts: 70ms, application-code: 73ms)
 Γùï Compiling /dashboard ...
- GET /dashboard 200 in 5.4s (next.js: 5.0s, application-code: 411ms)
- GET / 307 in 239ms (next.js: 12ms, application-code: 226ms)
- GET /dashboard 200 in 129ms (next.js: 5ms, application-code: 123ms)
-ΓÜá Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
-Cross-origin access to Next.js dev resources is blocked by default for safety.
+ GET /dashboard 200 in 5.3s (next.js: 5.2s, proxy.ts: 51ms, application-code: 126ms)
+[GET /analytics/dashboard] TypeError: Cannot read properties of undefined (reading 'groupBy')
+    at GET (src\app\api\v1\analytics\dashboard\route.ts:40:22)
+  38 |         _sum:  { amount: true },
+  39 |       }),
+> 40 |       prisma.dispute.groupBy({
+     |                      ^
+  41 |         by:    ['status'],
+  42 |         _count: true,
+  43 |       }),
+ GET /api/v1/analytics/dashboard 500 in 2.7s (next.js: 2.4s, proxy.ts: 46ms, application-code: 321ms)
+[GET /analytics/dashboard] TypeError: Cannot read properties of undefined (reading 'groupBy')
+    at GET (src\app\api\v1\analytics\dashboard\route.ts:40:22)
+  38 |         _sum:  { amount: true },
+  39 |       }),
+> 40 |       prisma.dispute.groupBy({
+     |                      ^
+  41 |         by:    ['status'],
+  42 |         _count: true,
+  43 |       }),
+ GET /api/v1/analytics/dashboard 500 in 151ms (next.js: 7ms, proxy.ts: 16ms, application-code: 128ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /dashboard 200 in 3.1s (next.js: 979ms, proxy.ts: 79ms, application-code: 2.1s)
+Γùï Compiling /api/v1/analytics/dashboard ...
+[GET /analytics/dashboard] TypeError: Cannot read properties of undefined (reading 'groupBy')
+    at GET (src\app\api\v1\analytics\dashboard\route.ts:40:22)
+  38 |         _sum:  { amount: true },
+  39 |       }),
+> 40 |       prisma.dispute.groupBy({
+     |                      ^
+  41 |         by:    ['status'],
+  42 |         _count: true,
+  43 |       }),
+ GET /api/v1/analytics/dashboard 500 in 6.2s (next.js: 4.8s, proxy.ts: 47ms, application-code: 1356ms)
+ GET /dashboard 200 in 814ms (next.js: 442ms, proxy.ts: 56ms, application-code: 316ms)
+prisma:error 
+Invalid `prisma.payout.findMany()` invocation:
 
-To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
 
-// next.config.js
-module.exports = {
-  allowedDevOrigins: ['127.0.0.1'],
+Authentication failed against the database server, the provided database credentials for `postgres` are not valid
+[GET /analytics/revenue] Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.payout.findMany()` invocation:
+
+
+Authentication failed against the database server, the provided database credentials for `postgres` are not valid
+    at async GET (src\app\api\v1\analytics\revenue\route.ts:27:37)
+  25 |   try {
+  26 |     // Fetch all transactions and payouts in window + previous window
+> 27 |     const [transactions, payouts] = await Promise.all([
+     |                                     ^
+  28 |       prisma.transaction.findMany({
+  29 |         where:  { createdAt: { gte: prevFrom }, status: { in: ['CAPTURED', 'REFUNDED', 'PA...
+  30 |         select: { amount: true, createdAt: true }, {
+  code: 'P1000',
+  meta: {
+    modelName: 'Payout',
+    driverAdapterError: Error [DriverAdapterError]: AuthenticationFailed
+        at async GET (src\app\api\v1\analytics\revenue\route.ts:27:37)
+      25 |   try {
+      26 |     // Fetch all transactions and payouts in window + previous window
+    > 27 |     const [transactions, payouts] = await Promise.all([
+         |                                     ^
+      28 |       prisma.transaction.findMany({
+      29 |         where:  { createdAt: { gte: prevFrom }, status: { in: ['CAPTURED', 'REFUNDED', 'PA...
+      30 |         select: { amount: true, createdAt: true }, {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.7.0'
 }
+ GET /api/v1/analytics/revenue?period=30d 500 in 8.3s (next.js: 4.8s, proxy.ts: 47ms, application-code: 3.4s)
+prisma:error 
+Invalid `prisma.transaction.findMany()` invocation:
 
-Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-ΓÜá Blocked cross-origin request to Next.js dev resource /__nextjs_font/geist-latin.woff2 from "127.0.0.1".
-Cross-origin access to Next.js dev resources is blocked by default for safety.
 
-To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
-
-// next.config.js
-module.exports = {
-  allowedDevOrigins: ['127.0.0.1'],
-}
-
-Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
- GET /dashboard/payments 200 in 3.2s (next.js: 3.0s, application-code: 275ms)
- GET /dashboard/payouts 200 in 1373ms (next.js: 1148ms, application-code: 225ms)
- GET /dashboard/payouts 200 in 93ms (next.js: 5ms, application-code: 89ms)
- GET /dashboard/transactions 200 in 1556ms (next.js: 1321ms, application-code: 234ms)
- GET /dashboard 200 in 95ms (next.js: 10ms, application-code: 85ms)
- GET /dashboard 200 in 67ms (next.js: 7ms, application-code: 60ms)
- GET /dashboard 200 in 171ms (next.js: 5ms, application-code: 166ms)
+Server has closed the connection.
+Γùï Compiling /dashboard/payments ...
+ GET /dashboard/payments 200 in 11.3s (next.js: 9.6s, proxy.ts: 18ms, application-code: 1709ms)
+Γùï Compiling /dashboard/transactions ...
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /dashboard/transactions 200 in 15.0s (next.js: 13.3s, proxy.ts: 1425ms, application-code: 288ms)
+ GET /dashboard/payouts 200 in 15.0s (next.js: 13.3s, proxy.ts: 1424ms, application-code: 288ms)
+ GET /dashboard/payments 200 in 13.6s (next.js: 170ms, proxy.ts: 13.4s, application-code: 109ms)
+ GET /dashboard/disputes 200 in 2.1s (next.js: 1459ms, proxy.ts: 563ms, application-code: 66ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /dashboard/disputes 200 in 137ms (next.js: 13ms, proxy.ts: 23ms, application-code: 101ms)
+ GET /dashboard/disputes 200 in 69ms (next.js: 9ms, proxy.ts: 14ms, application-code: 46ms)
+ GET /dashboard/disputes 200 in 81ms (next.js: 8ms, proxy.ts: 18ms, application-code: 55ms)
+ GET /dashboard/disputes 200 in 88ms (next.js: 10ms, proxy.ts: 16ms, application-code: 62ms)
+ GET /dashboard/disputes 200 in 176ms (next.js: 5ms, proxy.ts: 11ms, application-code: 160ms)
+ GET /dashboard/disputes 200 in 170ms (next.js: 10ms, proxy.ts: 25ms, application-code: 136ms)
+ GET /dashboard/disputes 200 in 421ms (next.js: 309ms, proxy.ts: 15ms, application-code: 97ms)
+ GET /dashboard/disputes 200 in 60ms (next.js: 5ms, proxy.ts: 13ms, application-code: 42ms)
+ GET /dashboard/disputes 200 in 268ms (next.js: 163ms, proxy.ts: 17ms, application-code: 89ms)
+ GET /dashboard/disputes 200 in 135ms (next.js: 65ms, proxy.ts: 12ms, application-code: 57ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /dashboard/disputes 200 in 72ms (next.js: 8ms, proxy.ts: 14ms, application-code: 50ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /dashboard/disputes 200 in 112ms (next.js: 11ms, proxy.ts: 15ms, application-code: 86ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+ GET /dashboard/disputes 200 in 88ms (next.js: 8ms, proxy.ts: 13ms, application-code: 67ms)
+ GET /dashboard/disputes 200 in 69ms (next.js: 8ms, proxy.ts: 9ms, application-code: 52ms)
+ GET /dashboard/disputes 200 in 300ms (next.js: 176ms, proxy.ts: 12ms, application-code: 112ms)
+ GET /dashboard/disputes 200 in 486ms (next.js: 355ms, proxy.ts: 19ms, application-code: 113ms)
+ GET /dashboard/disputes 200 in 237ms (next.js: 19ms, proxy.ts: 24ms, application-code: 195ms)
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });
+[cron] chargeback expiry error: TypeError: Cannot read properties of undefined (reading 'updateMany')
+    at eval (src\instrumentation.ts:13:48)
+  11 |       try {
+  12 |         const { default: prisma } = await import('@/lib/prisma');
+> 13 |         const result = await prisma.chargeback.updateMany({
+     |                                                ^
+  14 |           where: { status: 'PENDING', deadline: { lt: new Date() } },
+  15 |           data:  { status: 'EXPIRED' },
+  16 |         });

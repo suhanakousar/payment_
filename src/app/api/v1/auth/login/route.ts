@@ -61,6 +61,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (user.status === 'PENDING_VERIFICATION') {
+      return NextResponse.json(
+        { success: false, error: { code: 'EMAIL_NOT_VERIFIED', message: 'Verify your email before signing in.' }, meta: meta() },
+        { status: 403 }
+      );
+    }
+
     const passwordOk = await verifyPassword(password, user.passwordHash);
     if (!passwordOk) {
       return NextResponse.json(
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), status: 'ACTIVE' } });
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
     const jwtPayload = { userId: user.id, merchantId: user.merchantId, email: user.email, role: user.role };
     const accessToken  = signAccessToken(jwtPayload);

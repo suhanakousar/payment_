@@ -114,7 +114,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
             <Bell size={16} />
             <span
               className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-1"
-              style={{ background: 'var(--error)', ringColor: 'var(--sidebar-bg)' }}
+              style={{ background: 'var(--error)', boxShadow: '0 0 0 1px var(--sidebar-bg)' }}
             />
           </button>
 

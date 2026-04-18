@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { getAuthUser, isDevBypass } from '@/lib/auth';
@@ -15,7 +16,7 @@ const createPaymentSchema = z.object({
   }).refine((c) => c.email || c.phone, { message: 'At least one of customer.email or customer.phone is required' }),
   gateway_preference:  z.enum(['RAZORPAY', 'CASHFREE', 'STRIPE', 'AUTO']).default('RAZORPAY'),
   idempotency_key:     z.string().optional(),
-  metadata:            z.record(z.unknown()).optional(),
+  metadata:            z.record(z.string(), z.unknown()).optional(),
 });
 
 // ─── GET /api/v1/payments ─────────────────────────────────────────────────────
@@ -176,7 +177,7 @@ export async function POST(req: NextRequest) {
         customerEmail:   customer.email ?? null,
         customerPhone:   customer.phone ?? null,
         idempotencyKey:  idempotency_key ?? null,
-        metadata:        metadata ?? {},
+        metadata:        (metadata ?? {}) as Prisma.InputJsonValue,
       },
     });
 

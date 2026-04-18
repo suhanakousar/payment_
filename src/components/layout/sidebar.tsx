@@ -260,7 +260,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </div>
           <div
             className="w-2 h-2 rounded-full ring-2 shrink-0"
-            style={{ background: '#34D399', ringColor: 'var(--sidebar-bg)' }}
+            style={{ background: '#34D399', boxShadow: '0 0 0 2px var(--sidebar-bg)' }}
           />
         </div>
       </div>
