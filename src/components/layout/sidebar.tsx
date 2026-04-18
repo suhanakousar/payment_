@@ -15,8 +15,10 @@ import {
   Building2,
   Webhook,
   KeyRound,
-  Zap,
   X,
+  AlertTriangle,
+  ShieldAlert,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +35,8 @@ const navItems: NavItem[] = [
   { label: 'Payments',     href: '/dashboard/payments',     icon: CreditCard },
   { label: 'Payouts',      href: '/dashboard/payouts',      icon: Send },
   { label: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
+  { label: 'Disputes',     href: '/dashboard/disputes',     icon: AlertTriangle },
+  { label: 'Chargebacks',  href: '/dashboard/chargebacks',  icon: ShieldAlert },
   { label: 'Analytics',    href: '/dashboard/analytics',    icon: BarChart3 },
   {
     label: 'Settings',
@@ -64,31 +68,56 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-white border-r border-slate-100">
+    <div
+      className="flex flex-col h-full"
+      style={{
+        background: 'var(--sidebar-bg)',
+        borderRight: '1px solid var(--sidebar-border)',
+      }}
+    >
       {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-5 border-b border-slate-100 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-600 shrink-0">
+      <div
+        className="flex items-center justify-between h-16 px-5 shrink-0"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 animate-glow-pulse"
+            style={{ background: 'linear-gradient(135deg, #22D3EE, #A78BFA)' }}
+          >
             <Zap size={15} className="text-white" strokeWidth={2.5} />
           </div>
           <div>
-            <span className="font-extrabold text-[15px] tracking-tight text-slate-900">PayAgg</span>
-            <span className="ml-1.5 text-[9px] font-bold text-indigo-500 uppercase tracking-widest">Platform</span>
+            <span
+              className="font-extrabold text-[15px] tracking-tight gradient-text-cyan"
+            >
+              PayAgg
+            </span>
+            <span
+              className="ml-1.5 text-[9px] font-bold uppercase tracking-widest"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Platform
+            </span>
           </div>
         </div>
         {mobileOpen && (
           <button
             onClick={onMobileClose}
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="md:hidden w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         )}
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        <p
+          className="px-3 pb-3 text-[9px] font-bold uppercase tracking-[0.15em]"
+          style={{ color: 'var(--text-muted)' }}
+        >
           Main Menu
         </p>
 
@@ -98,35 +127,46 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
           if (hasChildren) {
             const anyChildActive = item.children!.some(c => pathname === c.href);
+            const isExpanded = settingsOpen;
             return (
               <div key={item.href}>
                 <button
                   onClick={() => setSettingsOpen((v) => !v)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group',
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                     (active || anyChildActive)
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'nav-item-active'
+                      : 'hover:bg-[rgba(255,255,255,0.04)]'
                   )}
+                  style={{
+                    color: (active || anyChildActive)
+                      ? 'var(--primary)'
+                      : 'var(--text-secondary)',
+                  }}
                 >
-                  <div className={cn(
-                    'shrink-0 flex items-center justify-center w-7 h-7 rounded-lg transition-colors',
-                    (active || anyChildActive) ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
-                  )}>
-                    <item.icon size={15} />
+                  <div
+                    className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                    style={{
+                      background: (active || anyChildActive)
+                        ? 'rgba(34,211,238,0.15)'
+                        : 'transparent',
+                    }}
+                  >
+                    <item.icon size={14} />
                   </div>
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left text-[13px]">{item.label}</span>
                   <ChevronDown
-                    size={13}
-                    className={cn(
-                      'text-slate-400 transition-transform duration-200',
-                      settingsOpen && 'rotate-180'
-                    )}
+                    size={12}
+                    className={cn('transition-transform duration-200', isExpanded && 'rotate-180')}
+                    style={{ color: 'var(--text-muted)' }}
                   />
                 </button>
 
-                {settingsOpen && (
-                  <div className="mt-1 ml-4 pl-3 space-y-0.5 border-l border-slate-100">
+                {isExpanded && (
+                  <div
+                    className="mt-1 ml-4 pl-3 space-y-0.5"
+                    style={{ borderLeft: '1px solid var(--border)' }}
+                  >
                     {item.children!.map((child) => {
                       const childActive = pathname === child.href;
                       return (
@@ -134,16 +174,20 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                           key={child.href}
                           href={child.href}
                           onClick={onMobileClose}
-                          className={cn(
-                            'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                            childActive
-                              ? 'bg-indigo-50 text-indigo-700'
-                              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                          )}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-150"
+                          style={{
+                            color: childActive ? 'var(--primary)' : 'var(--text-secondary)',
+                            background: childActive ? 'rgba(34,211,238,0.08)' : 'transparent',
+                          }}
                         >
-                          <child.icon size={13} className={childActive ? 'text-indigo-500' : 'text-slate-400'} />
+                          <child.icon size={12} />
                           <span>{child.label}</span>
-                          {childActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+                          {childActive && (
+                            <span
+                              className="ml-auto w-1.5 h-1.5 rounded-full"
+                              style={{ background: 'var(--primary)' }}
+                            />
+                          )}
                         </Link>
                       );
                     })}
@@ -159,22 +203,31 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               href={item.href}
               onClick={onMobileClose}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group',
-                active
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150',
+                active ? 'nav-item-active' : 'hover:bg-[rgba(255,255,255,0.04)]'
               )}
+              style={{ color: active ? 'var(--primary)' : 'var(--text-secondary)' }}
             >
-              <div className={cn(
-                'shrink-0 flex items-center justify-center w-7 h-7 rounded-lg transition-colors',
-                active ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
-              )}>
-                <item.icon size={15} />
+              <div
+                className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                style={{
+                  background: active ? 'rgba(34,211,238,0.15)' : 'transparent',
+                }}
+              >
+                <item.icon size={14} />
               </div>
               <span className="flex-1">{item.label}</span>
-              {active && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />}
+              {active && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: 'var(--primary)' }}
+                />
+              )}
               {!active && item.badge && (
-                <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full px-1.5 py-0.5">
+                <span
+                  className="text-[10px] font-bold rounded-full px-1.5 py-0.5"
+                  style={{ background: 'var(--error)', color: 'white' }}
+                >
                   {item.badge}
                 </span>
               )}
@@ -184,17 +237,31 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </nav>
 
       {/* User area */}
-      <div className="px-4 py-4 border-t border-slate-100 shrink-0">
-        <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
-          <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white ring-2 ring-indigo-100"
-            style={{ background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)' }}>
+      <div className="px-3 py-4 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+        <div
+          className="flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer hover:bg-[rgba(255,255,255,0.04)]"
+        >
+          <div
+            className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #22D3EE, #A78BFA)' }}
+          >
             MA
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-slate-800 text-xs font-semibold truncate leading-none mb-0.5">Merchant Admin</p>
-            <p className="text-slate-400 text-[11px] truncate">Growth Tier</p>
+            <p
+              className="text-[12px] font-semibold truncate leading-none mb-0.5"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Merchant Admin
+            </p>
+            <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>
+              Growth Tier
+            </p>
           </div>
-          <div className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white shrink-0" />
+          <div
+            className="w-2 h-2 rounded-full ring-2 shrink-0"
+            style={{ background: '#34D399', boxShadow: '0 0 0 2px var(--sidebar-bg)' }}
+          />
         </div>
       </div>
     </div>
@@ -203,7 +270,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="w-64 hidden md:flex flex-col fixed h-full z-50">
+      <aside className="w-60 hidden md:flex flex-col fixed h-full z-50">
         <SidebarContent />
       </aside>
 
@@ -211,10 +278,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       {mobileOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            className="fixed inset-0 z-40 md:hidden"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
             onClick={onMobileClose}
           />
-          <aside className="fixed top-0 left-0 h-full w-64 z-50 md:hidden flex flex-col">
+          <aside className="fixed top-0 left-0 h-full w-60 z-50 md:hidden flex flex-col">
             <SidebarContent />
           </aside>
         </>

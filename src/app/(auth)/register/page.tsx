@@ -236,6 +236,10 @@ export default function RegisterPage() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [termsError, setTermsError] = useState('');
   const [resendSeconds, setResendSeconds] = useState(30);
+  const [requestOtpError, setRequestOtpError] = useState('');
+  const [requestOtpSuccess, setRequestOtpSuccess] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [loadingSendOtp, setLoadingSendOtp] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   // Resend countdown
@@ -246,9 +250,41 @@ export default function RegisterPage() {
     return () => clearTimeout(timer);
   }, [step, resendSeconds]);
 
-  const handleResendOtp = () => {
-    setResendSeconds(30);
-    setOtp(Array(6).fill(''));
+  const requestOtp = async () => {
+    setLoadingSendOtp(true);
+    setRequestOtpError('');
+    setSubmitError('');
+
+    try {
+      const res = await fetch('/api/v1/auth/register/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_name: businessName,
+          email: emailAddr,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setRequestOtpError(data.error?.message ?? 'Unable to send verification code right now.');
+        return false;
+      }
+
+      setOtp(Array(6).fill(''));
+      setResendSeconds(30);
+      setRequestOtpSuccess(`Verification code sent to ${emailAddr}`);
+      return true;
+    } catch {
+      setRequestOtpError('Network error while sending verification code.');
+      return false;
+    } finally {
+      setLoadingSendOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    await requestOtp();
   };
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -279,13 +315,21 @@ export default function RegisterPage() {
   };
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1 && !validateStep1()) return;
-    if (step === 2 && !validateStep2()) return;
+    if (step === 2) {
+      if (!validateStep2()) return;
+      const sent = await requestOtp();
+      if (!sent) return;
+    }
     setStep((s) => Math.min(s + 1, TOTAL_STEPS));
   };
 
-  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
+  const handleBack = () => {
+    setRequestOtpError('');
+    setSubmitError('');
+    setStep((s) => Math.max(s - 1, 1));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,9 +337,41 @@ export default function RegisterPage() {
     setOtpError('');
     if (!agreeTerms) { setTermsError('You must accept the terms and conditions'); return; }
     setTermsError('');
+    setSubmitError('');
     setLoadingSubmit(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    router.push('/dashboard');
+    try {
+      const res = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          business_name: businessName,
+          full_name: fullName,
+          email: emailAddr,
+          password,
+          phone: phoneNum,
+          pan,
+          gstin,
+          otp: otp.join(''),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        const message = data.error?.message ?? 'Unable to create your account right now.';
+        if ((data.error?.code ?? '').startsWith('OTP_')) {
+          setOtpError(message);
+        } else {
+          setSubmitError(message);
+        }
+        return;
+      }
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      setSubmitError('Network error while creating your account.');
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -546,10 +622,11 @@ export default function RegisterPage() {
               variant="primary"
               size="lg"
               onClick={handleNext}
+              loading={loadingSendOtp}
               rightIcon={<ArrowRight size={16} />}
               className="flex-1"
             >
-              Next
+              Verify Email
             </Button>
           </div>
         </div>
@@ -559,6 +636,22 @@ export default function RegisterPage() {
       {step === 3 && (
         <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300" noValidate>
           <h2 className="text-base font-semibold text-slate-800">Email Verification</h2>
+
+          {requestOtpError && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {requestOtpError}
+            </div>
+          )}
+          {requestOtpSuccess && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {requestOtpSuccess}
+            </div>
+          )}
+          {submitError && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {submitError}
+            </div>
+          )}
 
           {/* Info banner */}
           <div

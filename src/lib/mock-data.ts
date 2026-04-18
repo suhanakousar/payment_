@@ -11,6 +11,9 @@ import type {
   PaymentMethodBreakdown,
   TransactionStatusCount,
   RecentActivity,
+  Dispute,
+  Chargeback,
+  SystemPerformance,
 } from '@/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -892,7 +895,7 @@ export const mockRecentActivity: RecentActivity[] = [
   {
     id: 'act_001',
     type: 'payment',
-    message: 'Payment of ₹4,999 captured via Razorpay — Priya Mehta (UPI)',
+    message: 'Payment of ₹4,999 captured — Priya Mehta (UPI)',
     timestamp: '2026-04-14T06:42:28.000Z',
     severity: 'success',
   },
@@ -906,21 +909,21 @@ export const mockRecentActivity: RecentActivity[] = [
   {
     id: 'act_003',
     type: 'payment',
-    message: 'Payment of ₹2,499 captured via Stripe — Aditya Kumar (Card)',
+    message: 'Payment of ₹2,499 captured — Aditya Kumar (Card)',
     timestamp: '2026-04-14T07:14:19.000Z',
     severity: 'success',
   },
   {
     id: 'act_004',
     type: 'alert',
-    message: 'Stripe gateway degraded — success rate dropped to 89.1%, latency at 890ms',
+    message: 'Processing latency elevated — success rate 89.1%, avg latency 890ms. Monitoring in progress.',
     timestamp: '2026-04-14T07:00:00.000Z',
     severity: 'warning',
   },
   {
     id: 'act_005',
     type: 'payment',
-    message: 'Payment of ₹999 failed via Razorpay — Sunita Rao (Net Banking: BANK_DECLINED)',
+    message: 'Payment of ₹999 failed — Sunita Rao (Net Banking: BANK_DECLINED)',
     timestamp: '2026-04-14T07:05:22.000Z',
     severity: 'error',
   },
@@ -934,7 +937,7 @@ export const mockRecentActivity: RecentActivity[] = [
   {
     id: 'act_007',
     type: 'webhook',
-    message: 'Webhook signature validation failed — Cashfree event evt_CshFr_V8h3n5W9i4 ignored',
+    message: 'Webhook signature validation failed — event evt_V8h3n5W9i4 ignored',
     timestamp: '2026-04-13T14:22:42.000Z',
     severity: 'warning',
   },
@@ -944,5 +947,130 @@ export const mockRecentActivity: RecentActivity[] = [
     message: 'Payout of ₹1,00,000 to Vikram Logistics permanently failed — account frozen',
     timestamp: '2026-04-12T09:30:00.000Z',
     severity: 'error',
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// System Performance
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const mockSystemPerformance: SystemPerformance = {
+  successRate: 94.2,
+  failedTransactions: 67,
+  avgProcessingTimeMs: 348,
+  lastUpdated: '2026-04-14T07:30:00.000Z',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Disputes
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const mockDisputes: Dispute[] = [
+  {
+    id: 'dsp_a1b2c3d4',
+    transactionId: 'txn_f2j9b6e4',
+    amount: 99_900,
+    reason: 'FAILED_PAYMENT',
+    description: 'Amount deducted but payment failed. Customer reported money not returned.',
+    status: 'PENDING',
+    createdAt: '2026-04-14T08:00:00.000Z',
+    updatedAt: '2026-04-14T08:00:00.000Z',
+  },
+  {
+    id: 'dsp_e5f6g7h8',
+    transactionId: 'txn_b9w2f5k7',
+    amount: 3_49_900,
+    reason: 'RETURN',
+    description: 'Customer returned the product and requests full refund.',
+    status: 'UNDER_REVIEW',
+    createdAt: '2026-04-13T16:00:00.000Z',
+    updatedAt: '2026-04-13T18:00:00.000Z',
+  },
+  {
+    id: 'dsp_i9j0k1l2',
+    transactionId: 'txn_x1v8h3n5',
+    amount: 19_900,
+    reason: 'FAILED_PAYMENT',
+    description: 'Wallet balance deducted, payment not processed.',
+    status: 'RESOLVED',
+    createdAt: '2026-04-13T15:00:00.000Z',
+    updatedAt: '2026-04-13T20:00:00.000Z',
+  },
+  {
+    id: 'dsp_m3n4o5p6',
+    transactionId: 'txn_n9f1p4s7',
+    amount: 1_49_900,
+    reason: 'COMPLAINT',
+    description: 'Customer claims card was charged but service was not delivered.',
+    status: 'PENDING',
+    createdAt: '2026-04-12T18:00:00.000Z',
+    updatedAt: '2026-04-12T18:00:00.000Z',
+  },
+  {
+    id: 'dsp_q7r8s9t0',
+    transactionId: 'txn_v5c2k8r3',
+    amount: 79_900,
+    reason: 'FAILED_PAYMENT',
+    description: 'UPI timeout — amount deducted from customer account.',
+    status: 'UNDER_REVIEW',
+    createdAt: '2026-04-10T09:00:00.000Z',
+    updatedAt: '2026-04-10T11:00:00.000Z',
+  },
+  {
+    id: 'dsp_u1v2w3x4',
+    transactionId: 'txn_k5a8c2v0',
+    amount: 4_99_900,
+    reason: 'RETURN',
+    description: 'Partial return — customer only used part of the service.',
+    status: 'RESOLVED',
+    createdAt: '2026-04-12T17:00:00.000Z',
+    updatedAt: '2026-04-13T10:00:00.000Z',
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chargebacks
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const mockChargebacks: Chargeback[] = [
+  {
+    id: 'cbk_a1b2c3d4',
+    disputeId: 'dsp_e5f6g7h8',
+    transactionId: 'txn_b9w2f5k7',
+    amount: 3_49_900,
+    status: 'PENDING',
+    deadline: '2026-04-28T00:00:00.000Z',
+    createdAt: '2026-04-13T18:00:00.000Z',
+    updatedAt: '2026-04-13T18:00:00.000Z',
+  },
+  {
+    id: 'cbk_e5f6g7h8',
+    disputeId: 'dsp_i9j0k1l2',
+    transactionId: 'txn_x1v8h3n5',
+    amount: 19_900,
+    status: 'ACCEPTED',
+    deadline: '2026-04-20T00:00:00.000Z',
+    createdAt: '2026-04-13T20:00:00.000Z',
+    updatedAt: '2026-04-14T09:00:00.000Z',
+  },
+  {
+    id: 'cbk_i9j0k1l2',
+    disputeId: 'dsp_u1v2w3x4',
+    transactionId: 'txn_k5a8c2v0',
+    amount: 4_99_900,
+    status: 'COMPLETED',
+    deadline: '2026-04-26T00:00:00.000Z',
+    createdAt: '2026-04-13T10:00:00.000Z',
+    updatedAt: '2026-04-14T10:00:00.000Z',
+  },
+  {
+    id: 'cbk_m3n4o5p6',
+    disputeId: 'dsp_q7r8s9t0',
+    transactionId: 'txn_v5c2k8r3',
+    amount: 79_900,
+    status: 'PENDING',
+    deadline: '2026-04-25T00:00:00.000Z',
+    createdAt: '2026-04-10T11:00:00.000Z',
+    updatedAt: '2026-04-10T11:00:00.000Z',
   },
 ];

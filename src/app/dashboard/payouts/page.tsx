@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Send,
   Upload,
@@ -27,7 +27,7 @@ import {
   maskAccountNumber,
   getStatusColor,
 } from '@/lib/utils';
-import { mockPayouts } from '@/lib/mock-data';
+import type { Payout } from '@/types';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -130,9 +130,10 @@ function StatCard({
 interface SinglePayoutModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-function SinglePayoutModal({ open, onClose }: SinglePayoutModalProps) {
+function SinglePayoutModal({ open, onClose, onSuccess }: SinglePayoutModalProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1=form, 2=review, 3=success
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -189,9 +190,32 @@ function SinglePayoutModal({ open, onClose }: SinglePayoutModalProps) {
 
   const handleConfirm = async () => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setLoading(false);
-    setStep(3);
+    try {
+      const res = await fetch('/api/v1/payouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          beneficiary_name: form.beneficiaryName,
+          account_number:   form.accountNumber,
+          ifsc_code:        form.ifscCode.toUpperCase(),
+          amount:           Math.round(parseFloat(form.amount) * 100),
+          mode:             form.mode,
+          schedule_at:      form.scheduled && form.scheduledAt ? form.scheduledAt : undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setStep(3);
+        onSuccess?.();
+      } else {
+        alert(json.error?.message ?? 'Failed to create payout');
+      }
+    } catch {
+      alert('Network error — please try again');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const modeDescriptions: Record<string, string> = {
@@ -865,7 +889,7 @@ function PayoutDetailModal({
   payout,
   onClose,
 }: {
-  payout: (typeof mockPayouts)[0] | null;
+  payout: Payout | null;
   onClose: () => void;
 }) {
   if (!payout) return null;
@@ -930,6 +954,17 @@ function PayoutDetailModal({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PayoutsPage() {
+  // ── Remote data ───────────────────────────────────────────────────────────
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [fetchTick, setFetchTick] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/v1/payouts?limit=200', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setPayouts(json.data ?? []); })
+      .catch(() => {});
+  }, [fetchTick]);
+
   const [activeTab, setActiveTab] = useState<TabId>('all');
   const [statusFilter, setStatusFilter] = useState<PayoutStatus>('ALL');
   const [modeFilter, setModeFilter] = useState<PayoutMode>('ALL');
@@ -940,26 +975,17 @@ export default function PayoutsPage() {
 
   const [showSingleModal, setShowSingleModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [selectedPayout, setSelectedPayout] = useState<(typeof mockPayouts)[0] | null>(null);
+  const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
 
   // ── Filtering logic ───────────────────────────────────────────────────────
-  const filtered = mockPayouts.filter((p) => {
-    // Tab filter
+  const filtered = payouts.filter((p) => {
     if (activeTab === 'single' && p.batchId) return false;
     if (activeTab === 'bulk' && !p.batchId) return false;
     if (activeTab === 'failed' && p.status !== 'FAILED' && p.status !== 'PERMANENTLY_FAILED') return false;
-
-    // Status filter
     if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
-
-    // Mode filter
     if (modeFilter !== 'ALL' && p.mode !== modeFilter) return false;
-
-    // Date range
     if (dateFrom && new Date(p.createdAt) < new Date(dateFrom)) return false;
     if (dateTo && new Date(p.createdAt) > new Date(dateTo + 'T23:59:59')) return false;
-
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
@@ -976,7 +1002,6 @@ export default function PayoutsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  // Reset page when filters change
   const handleTabChange = (tab: TabId) => { setActiveTab(tab); setCurrentPage(1); };
   const handleStatusFilter = (v: string) => { setStatusFilter(v as PayoutStatus); setCurrentPage(1); };
   const handleModeFilter = (v: string) => { setModeFilter(v as PayoutMode); setCurrentPage(1); };
@@ -984,11 +1009,11 @@ export default function PayoutsPage() {
 
   // Stats
   const today = new Date().toISOString().slice(0, 10);
-  const todayPayouts = mockPayouts.filter((p) => p.createdAt.startsWith(today));
+  const todayPayouts = payouts.filter((p) => p.createdAt.startsWith(today));
   const todayDisbursed = todayPayouts.filter((p) => p.status === 'SUCCESS').reduce((s, p) => s + p.amount, 0);
-  const queued = mockPayouts.filter((p) => p.status === 'QUEUED').length;
-  const processing = mockPayouts.filter((p) => p.status === 'PROCESSING').length;
-  const failed = mockPayouts.filter((p) => p.status === 'FAILED' || p.status === 'PERMANENTLY_FAILED').length;
+  const queued = payouts.filter((p) => p.status === 'QUEUED').length;
+  const processing = payouts.filter((p) => p.status === 'PROCESSING').length;
+  const failed = payouts.filter((p) => p.status === 'FAILED' || p.status === 'PERMANENTLY_FAILED').length;
 
   return (
     <div className="space-y-6">
@@ -1327,6 +1352,7 @@ export default function PayoutsPage() {
       <SinglePayoutModal
         open={showSingleModal}
         onClose={() => setShowSingleModal(false)}
+        onSuccess={() => setFetchTick((t) => t + 1)}
       />
       <BulkUploadModal
         open={showBulkModal}

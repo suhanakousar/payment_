@@ -54,7 +54,6 @@ export default function SettingsPage() {
           <Link key={href} href={href} className="group block outline-none">
             <Card
               className={`h-full border-2 border-transparent transition-all duration-200 ${border} group-focus-visible:ring-2 group-focus-visible:ring-indigo-500/40`}
-              hoverable
             >
               <CardContent className="flex flex-col gap-4 p-6 h-full">
                 {/* Icon */}

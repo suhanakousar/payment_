@@ -1,44 +1,25 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-const cardVariants = cva(
-  "rounded-2xl bg-white transition-all duration-200",
-  {
-    variants: {
-      variant: {
-        default:  "",
-        bordered: "border-2 border-slate-200",
-        elevated: "",
-        glass:    "glass",
-      },
-      hoverable: {
-        true: "card-hover cursor-pointer",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-const cardShadow = {
-  boxShadow: '0 2px 12px rgba(99,102,241,0.07), 0 1px 3px rgba(0,0,0,0.05)',
-  border: '1px solid rgba(226,232,240,0.8)',
-};
-
-export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {
-  hoverable?: boolean;
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  glow?: boolean;
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, hoverable, style, ...props }, ref) => (
+  ({ className, glow, style, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(cardVariants({ variant, hoverable }), className)}
-      style={{ ...cardShadow, ...style }}
+      className={cn(
+        "rounded-2xl transition-all duration-200",
+        glow && "border-glow-cyan",
+        className
+      )}
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-card)',
+        ...style,
+      }}
       {...props}
     />
   )
@@ -63,7 +44,8 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("text-sm font-bold leading-tight text-slate-900 tracking-tight", className)}
+    className={cn("text-sm font-bold leading-tight tracking-tight", className)}
+    style={{ color: 'var(--text-primary)' }}
     {...props}
   />
 ));
@@ -75,7 +57,8 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-xs text-slate-400 leading-relaxed", className)}
+    className={cn("text-xs leading-relaxed", className)}
+    style={{ color: 'var(--text-secondary)' }}
     {...props}
   />
 ));
@@ -95,10 +78,8 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      "flex items-center px-6 py-4 gap-3 border-t border-slate-100",
-      className
-    )}
+    className={cn("flex items-center px-6 py-4 gap-3", className)}
+    style={{ borderTop: '1px solid var(--border)' }}
     {...props}
   />
 ));

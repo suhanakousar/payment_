@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 import { cn, formatCurrency, formatDate, generateId } from '@/lib/utils';
-import { mockTransactions } from '@/lib/mock-data';
+import type { Transaction } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge, paymentStatusVariant } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -231,6 +231,17 @@ function GatewayOption({ id, value, label, sublabel, badge, selected, onSelect }
 const PAGE_SIZE = 10;
 
 export default function PaymentsPage() {
+  // ── Remote data ─────────────────────────────────────────────────────────────
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [fetchTick, setFetchTick] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/v1/transactions?limit=200', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setTransactions(json.data ?? []); })
+      .catch(() => {});
+  }, [fetchTick]);
+
   // ── Filter state ────────────────────────────────────────────────────────────
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [gatewayFilter, setGatewayFilter] = useState('ALL');
@@ -253,7 +264,7 @@ export default function PaymentsPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   const filtered = useMemo(() => {
-    return mockTransactions.filter((txn) => {
+    return transactions.filter((txn) => {
       if (statusFilter !== 'ALL' && txn.status !== statusFilter) return false;
       if (gatewayFilter !== 'ALL' && txn.gateway !== gatewayFilter) return false;
       if (dateFrom && txn.createdAt < dateFrom) return false;
@@ -268,7 +279,7 @@ export default function PaymentsPage() {
       }
       return true;
     });
-  }, [statusFilter, gatewayFilter, dateFrom, dateTo, searchQuery]);
+  }, [transactions, statusFilter, gatewayFilter, dateFrom, dateTo, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -295,13 +306,40 @@ export default function PaymentsPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleCreatePayment = () => {
+  const handleCreatePayment = async () => {
     setModalStep('loading');
-    setTimeout(() => {
-      const linkId = generateId('pl');
-      setGeneratedLink(`https://pay.payagg.in/${linkId}`);
-      setModalStep('success');
-    }, 1500);
+    try {
+      const amountPaise = Math.round(parseFloat(form.amount) * 100);
+      const res = await fetch('/api/v1/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount: amountPaise,
+          currency: form.currency,
+          customer: {
+            email: form.customerEmail || undefined,
+            phone: form.customerPhone || undefined,
+            name:  form.customerName  || undefined,
+          },
+          gateway_preference: form.gateway || 'AUTO',
+          metadata: form.description ? { description: form.description } : undefined,
+          idempotency_key: generateId('idem'),
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setGeneratedLink(json.data.payment_url ?? `${window.location.origin}/checkout/${json.data.transaction_id}`);
+        setModalStep('success');
+        setFetchTick((t) => t + 1);
+      } else {
+        setModalStep('form');
+        alert(json.error?.message ?? 'Failed to create payment');
+      }
+    } catch {
+      setModalStep('form');
+      alert('Network error — please try again');
+    }
   };
 
   const isFormValid =

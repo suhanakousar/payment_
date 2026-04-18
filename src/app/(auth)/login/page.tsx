@@ -120,15 +120,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailErrors, setEmailErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Phone form
-  const [phone, setPhone] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
-  const [phoneError, setPhoneError] = useState('');
-  const [otpError, setOtpError] = useState('');
-
   // Loading states
-  const [loadingSendOtp, setLoadingSendOtp] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   // Tab slide indicator ref for animation
@@ -146,6 +138,8 @@ export default function LoginPage() {
     }
   }, [activeTab]);
 
+  const [loginError, setLoginError] = useState<string>('');
+
   // ── Email sign-in ──────────────────────────────────────────────────────────
   const validateEmail = () => {
     const errs: typeof emailErrors = {};
@@ -160,41 +154,25 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validateEmail()) return;
     setLoadingSubmit(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    router.push('/dashboard');
-  };
-
-  // ── Phone sign-in ──────────────────────────────────────────────────────────
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone.trim() || phone.replace(/\D/g, '').length < 10) {
-      setPhoneError('Enter a valid 10-digit phone number');
-      return;
+    setLoginError('');
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method:      'POST',
+        headers:     { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body:        JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setLoginError(data.error?.message ?? 'Login failed. Please try again.');
+        setLoadingSubmit(false);
+        return;
+      }
+      router.push('/dashboard');
+    } catch {
+      setLoginError('Network error. Please check your connection.');
+      setLoadingSubmit(false);
     }
-    setPhoneError('');
-    setLoadingSendOtp(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoadingSendOtp(false);
-    setOtpSent(true);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.some((d) => !d)) {
-      setOtpError('Please enter all 6 digits');
-      return;
-    }
-    setOtpError('');
-    setLoadingSubmit(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    router.push('/dashboard');
-  };
-
-  // ── Google sign-in (placeholder) ──────────────────────────────────────────
-  const handleGoogleSignIn = async () => {
-    setLoadingSubmit(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    router.push('/dashboard');
   };
 
   return (
@@ -255,6 +233,11 @@ export default function LoginPage() {
       >
         {activeTab === 'email' && (
           <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
+            {loginError && (
+              <div className="rounded-lg px-4 py-3 text-sm font-medium text-red-700 bg-red-50 border border-red-200">
+                {loginError}
+              </div>
+            )}
             <Input
               label="Email address"
               type="email"
@@ -335,100 +318,18 @@ export default function LoginPage() {
         )}
         aria-hidden={activeTab !== 'phone'}
       >
-        {activeTab === 'phone' && !otpSent && (
-          <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Phone number</label>
-              <div className="flex gap-2">
-                <div
-                  className={cn(
-                    'flex items-center justify-center h-10 px-3 rounded-lg border text-sm font-medium text-slate-700 bg-slate-50 select-none',
-                    phoneError ? 'border-rose-400' : 'border-slate-200'
-                  )}
-                >
-                  +91
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="tel"
-                    placeholder="98765 43210"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
-                      if (phoneError) setPhoneError('');
-                    }}
-                    maxLength={10}
-                    className={cn(
-                      'w-full rounded-lg border bg-white text-sm text-slate-900 placeholder:text-slate-400',
-                      'h-10 px-3 py-2',
-                      'transition-all duration-150',
-                      'focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400',
-                      phoneError
-                        ? 'border-rose-400 focus:ring-rose-500/30'
-                        : 'border-slate-200 hover:border-slate-300'
-                    )}
-                  />
-                </div>
+        {activeTab === 'phone' && (
+          <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+            <div className="flex items-start gap-3">
+              <Phone size={16} className="mt-0.5 shrink-0 text-amber-700" />
+              <div>
+                <p className="font-semibold">Phone OTP sign-in is not enabled yet</p>
+                <p className="mt-1 text-amber-800/80">
+                  Email/password login is live. If you want SMS OTP too, we need to wire a real provider like Twilio, MSG91, or AWS SNS.
+                </p>
               </div>
-              {phoneError && <p className="text-xs text-rose-500">{phoneError}</p>}
             </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={loadingSendOtp}
-              rightIcon={!loadingSendOtp ? <ArrowRight size={16} /> : undefined}
-              className="mt-2"
-            >
-              Send OTP
-            </Button>
-          </form>
-        )}
-
-        {activeTab === 'phone' && otpSent && (
-          <form onSubmit={handleVerifyOtp} className="space-y-5" noValidate>
-            {/* Info banner */}
-            <div
-              className="flex items-start gap-3 px-4 py-3 rounded-xl text-sm"
-              style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.15)' }}
-            >
-              <Phone size={16} className="text-indigo-500 mt-0.5 shrink-0" />
-              <span className="text-slate-600">
-                OTP sent to <span className="font-semibold text-slate-800">+91 {phone}</span>
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Enter OTP</label>
-              <OtpInput value={otp} onChange={setOtp} />
-              {otpError && <p className="text-xs text-rose-500 mt-1">{otpError}</p>}
-            </div>
-
-            {/* Resend */}
-            <button
-              type="button"
-              onClick={() => {
-                setOtp(Array(6).fill(''));
-                setOtpSent(false);
-              }}
-              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-            >
-              Didn&apos;t receive it? Send again
-            </button>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={loadingSubmit}
-              rightIcon={!loadingSubmit ? <ArrowRight size={16} /> : undefined}
-            >
-              Verify &amp; Sign In
-            </Button>
-          </form>
+          </div>
         )}
       </div>
 
@@ -438,8 +339,7 @@ export default function LoginPage() {
       {/* Google button */}
       <button
         type="button"
-        onClick={handleGoogleSignIn}
-        disabled={loadingSubmit}
+        disabled
         className={cn(
           'w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-slate-200 bg-white',
           'text-sm font-medium text-slate-700',
@@ -447,15 +347,11 @@ export default function LoginPage() {
           'active:bg-slate-100',
           'transition-all duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/30',
-          'disabled:opacity-50 disabled:pointer-events-none'
+          'disabled:opacity-60 disabled:cursor-not-allowed'
         )}
       >
-        {loadingSubmit ? (
-          <Loader2 size={16} className="animate-spin text-slate-500" />
-        ) : (
-          <GoogleIcon />
-        )}
-        Continue with Google
+        <GoogleIcon />
+        Google sign-in coming soon
       </button>
 
       {/* Register link */}

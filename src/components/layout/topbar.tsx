@@ -10,6 +10,8 @@ const routeMeta: Record<string, { title: string; crumbs: string[] }> = {
   '/dashboard/payments':           { title: 'Payments',     crumbs: ['Home', 'Payments'] },
   '/dashboard/payouts':            { title: 'Payouts',      crumbs: ['Home', 'Payouts'] },
   '/dashboard/transactions':       { title: 'Transactions', crumbs: ['Home', 'Transactions'] },
+  '/dashboard/disputes':           { title: 'Disputes',     crumbs: ['Home', 'Disputes'] },
+  '/dashboard/chargebacks':        { title: 'Chargebacks',  crumbs: ['Home', 'Chargebacks'] },
   '/dashboard/analytics':          { title: 'Analytics',    crumbs: ['Home', 'Analytics'] },
   '/dashboard/settings':           { title: 'Settings',     crumbs: ['Home', 'Settings'] },
   '/dashboard/settings/profile':   { title: 'Profile',      crumbs: ['Home', 'Settings', 'Profile'] },
@@ -19,9 +21,9 @@ const routeMeta: Record<string, { title: string; crumbs: string[] }> = {
 };
 
 const NOTIFICATIONS = [
-  { id: 1, text: 'New transaction ₹24,500 captured', time: '2m ago', dot: 'bg-emerald-500' },
-  { id: 2, text: 'Payout batch #BP-2847 processed',  time: '18m ago', dot: 'bg-indigo-500' },
-  { id: 3, text: 'Stripe gateway latency degraded',   time: '1h ago',  dot: 'bg-amber-500' },
+  { id: 1, text: 'New transaction ₹24,500 captured', time: '2m ago',  color: '#34D399' },
+  { id: 2, text: 'Payout batch #BP-2847 processed',  time: '18m ago', color: '#22D3EE' },
+  { id: 3, text: 'Processing latency elevated',       time: '1h ago',  color: '#FCD34D' },
 ];
 
 interface TopbarProps {
@@ -30,34 +32,51 @@ interface TopbarProps {
 
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const meta = routeMeta[pathname] ?? { title: 'Dashboard', crumbs: ['Home'] };
+  const router   = useRouter();
+  const meta     = routeMeta[pathname] ?? { title: 'Dashboard', crumbs: ['Home'] };
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [bellOpen, setBellOpen] = useState(false);
+  const [bellOpen,     setBellOpen]     = useState(false);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 shrink-0">
-
+    <header
+      className="h-16 sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 shrink-0"
+      style={{
+        background: 'rgba(7,12,27,0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid var(--border)',
+      }}
+    >
       {/* Left */}
       <div className="flex items-center gap-3">
-        {/* Mobile hamburger */}
         <button
           onClick={onMenuClick}
-          className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+          style={{ color: 'var(--text-secondary)' }}
           aria-label="Open menu"
         >
           <Menu size={18} />
         </button>
 
         <div className="flex flex-col justify-center">
-          <h1 className="text-slate-900 font-bold text-base leading-none tracking-tight">{meta.title}</h1>
+          <h1
+            className="font-bold text-base leading-none tracking-tight"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {meta.title}
+          </h1>
           <nav aria-label="breadcrumb" className="hidden sm:block">
-            <ol className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+            <ol className="flex items-center gap-1 text-[11px] mt-0.5">
               {meta.crumbs.map((crumb, i) => (
-                <li key={crumb} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="text-slate-300">/</span>}
-                  <span className={i === meta.crumbs.length - 1 ? 'text-indigo-500 font-semibold' : ''}>
+                <li key={crumb} className="flex items-center gap-1">
+                  {i > 0 && <span style={{ color: 'var(--text-muted)' }}>/</span>}
+                  <span style={{
+                    color: i === meta.crumbs.length - 1
+                      ? 'var(--primary)'
+                      : 'var(--text-muted)',
+                    fontWeight: i === meta.crumbs.length - 1 ? 600 : 400,
+                  }}>
                     {crumb}
                   </span>
                 </li>
@@ -71,11 +90,11 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       <div className="flex items-center gap-2">
         {/* Search */}
         <div className="relative hidden sm:flex items-center">
-          <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-3 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
           <input
             type="text"
-            placeholder="Search transactions..."
-            className="pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 focus:bg-white transition-all w-48 focus:w-60"
+            placeholder="Search..."
+            className="pl-8 pr-3 py-2 text-[13px] rounded-xl w-44 focus:w-56 transition-all input-dark"
           />
         </div>
 
@@ -85,21 +104,42 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
             onClick={() => { setBellOpen(v => !v); setDropdownOpen(false); }}
             className={cn(
               'relative w-9 h-9 flex items-center justify-center rounded-xl transition-colors',
-              bellOpen ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              bellOpen
+                ? 'bg-[rgba(34,211,238,0.1)] text-cyan-400'
+                : 'hover:bg-[rgba(255,255,255,0.06)]'
             )}
+            style={{ color: bellOpen ? 'var(--primary)' : 'var(--text-secondary)' }}
             aria-label="Notifications"
           >
-            <Bell size={17} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-1 ring-white" />
+            <Bell size={16} />
+            <span
+              className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-1"
+              style={{ background: 'var(--error)', boxShadow: '0 0 0 1px var(--sidebar-bg)' }}
+            />
           </button>
 
           {bellOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setBellOpen(false)} />
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl overflow-hidden z-20 bg-white border border-slate-100 shadow-xl">
-                <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100">
-                  <p className="text-sm font-bold text-slate-800">Notifications</p>
-                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              <div
+                className="absolute right-0 mt-2 w-72 rounded-2xl overflow-hidden z-20"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-strong)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                }}
+              >
+                <div
+                  className="px-4 py-3 flex items-center justify-between"
+                  style={{ borderBottom: '1px solid var(--border)' }}
+                >
+                  <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                    Notifications
+                  </p>
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--primary)' }}
+                  >
                     {NOTIFICATIONS.length} new
                   </span>
                 </div>
@@ -108,18 +148,28 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
                     <button
                       key={n.id}
                       onClick={() => setBellOpen(false)}
-                      className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 text-left transition-colors"
+                      className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]"
                     >
-                      <span className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', n.dot)} />
+                      <span
+                        className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                        style={{ background: n.color }}
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-slate-700 leading-relaxed">{n.text}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{n.time}</p>
+                        <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          {n.text}
+                        </p>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                          {n.time}
+                        </p>
                       </div>
                     </button>
                   ))}
                 </div>
-                <div className="px-4 py-2.5 border-t border-slate-100">
-                  <button className="w-full text-xs text-center text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">
+                <div className="px-4 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+                  <button
+                    className="w-full text-xs text-center font-semibold transition-colors"
+                    style={{ color: 'var(--primary)' }}
+                  >
                     View all notifications →
                   </button>
                 </div>
@@ -129,67 +179,93 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         </div>
 
         {/* Divider */}
-        <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
+        <div
+          className="w-px h-5 mx-1 hidden sm:block"
+          style={{ background: 'var(--border)' }}
+        />
 
         {/* User */}
         <div className="relative">
           <button
             onClick={() => { setDropdownOpen(v => !v); setBellOpen(false); }}
-            className={cn(
-              'flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-colors',
-              dropdownOpen ? 'bg-slate-50' : 'hover:bg-slate-50'
-            )}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-colors hover:bg-[rgba(255,255,255,0.05)]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ring-2 ring-indigo-100"
-              style={{ background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)' }}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+              style={{ background: 'linear-gradient(135deg, #22D3EE, #A78BFA)' }}
             >
               MA
             </div>
             <div className="hidden sm:flex flex-col items-start">
-              <span className="text-xs font-semibold text-slate-800 leading-none">Merchant Admin</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">Growth Tier</span>
+              <span className="text-[12px] font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>
+                Merchant Admin
+              </span>
+              <span className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                Growth Tier
+              </span>
             </div>
             <ChevronDown
-              size={13}
-              className={cn('text-slate-400 transition-transform hidden sm:block', dropdownOpen && 'rotate-180')}
+              size={12}
+              className={cn('transition-transform hidden sm:block', dropdownOpen && 'rotate-180')}
+              style={{ color: 'var(--text-muted)' }}
             />
           </button>
 
           {dropdownOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl overflow-hidden z-20 bg-white border border-slate-100 shadow-xl">
-                <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-br from-indigo-50 to-violet-50">
-                  <p className="text-sm font-bold text-slate-800">Merchant Admin</p>
-                  <p className="text-xs text-slate-500 mt-0.5">admin@payagg.io</p>
-                  <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              <div
+                className="absolute right-0 mt-2 w-52 rounded-2xl overflow-hidden z-20"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-strong)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                }}
+              >
+                <div
+                  className="px-4 py-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(34,211,238,0.08), rgba(167,139,250,0.08))',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                >
+                  <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                    Merchant Admin
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    admin@payagg.io
+                  </p>
+                  <span
+                    className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(34,211,238,0.15)', color: 'var(--primary)' }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                     Growth Tier
                   </span>
                 </div>
                 <div className="py-1.5">
-                  <button
-                    onClick={() => { setDropdownOpen(false); router.push('/dashboard/settings/profile'); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                  >
-                    <User size={14} className="text-slate-400" />
-                    My Profile
-                  </button>
-                  <button
-                    onClick={() => { setDropdownOpen(false); router.push('/dashboard/settings'); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                  >
-                    <Settings size={14} className="text-slate-400" />
-                    Settings
-                  </button>
+                  {[
+                    { label: 'My Profile', icon: User, path: '/dashboard/settings/profile' },
+                    { label: 'Settings',   icon: Settings, path: '/dashboard/settings' },
+                  ].map(item => (
+                    <button
+                      key={item.label}
+                      onClick={() => { setDropdownOpen(false); router.push(item.path); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      <item.icon size={13} style={{ color: 'var(--text-muted)' }} />
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="border-t border-slate-100 py-1.5">
+                <div className="py-1.5" style={{ borderTop: '1px solid var(--border)' }}>
                   <button
                     onClick={() => { setDropdownOpen(false); router.push('/login'); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(248,113,113,0.08)]"
+                    style={{ color: 'var(--error)' }}
                   >
-                    <LogOut size={14} />
+                    <LogOut size={13} />
                     Sign out
                   </button>
                 </div>

@@ -31,7 +31,6 @@ import {
 } from 'lucide-react';
 
 import { cn, formatCurrency, formatDate, formatRelativeTime, getStatusColor } from '@/lib/utils';
-import { mockTransactions } from '@/lib/mock-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge, paymentStatusVariant } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -457,11 +456,13 @@ function DetailRow({
 function ExportModal({
   open,
   onClose,
+  totalCount,
   filteredCount,
   selectedCount,
 }: {
   open: boolean;
   onClose: () => void;
+  totalCount: number;
   filteredCount: number;
   selectedCount: number;
 }) {
@@ -523,7 +524,7 @@ function ExportModal({
               <div className="grid grid-cols-3 gap-2">
                 {(
                   [
-                    { val: 'all',      label: 'All Transactions', count: mockTransactions.length },
+                    { val: 'all',      label: 'All Transactions', count: totalCount },
                     { val: 'filtered', label: 'Filtered Only',    count: filteredCount },
                     { val: 'selected', label: 'Selected Only',    count: selectedCount },
                   ] as const
@@ -653,6 +654,20 @@ function SortIcon({ field, sortField, sortDir }: { field: string; sortField: str
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function TransactionsPage() {
+  // ── remote data ───────────────────────────────────────────────────────────
+  const [transactions,  setTransactions]  = useState<Transaction[]>([]);
+  const [isLoading,     setIsLoading]     = useState(true);
+  const [fetchTick,     setFetchTick]     = useState(0);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch('/api/v1/transactions?limit=200', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setTransactions(json.data ?? []); })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, [fetchTick]);
+
   // ── filter state ──────────────────────────────────────────────────────────
   const [filterOpen,    setFilterOpen]    = useState(false);
   const [search,        setSearch]        = useState('');
@@ -702,7 +717,7 @@ export default function TransactionsPage() {
 
   // ── filtered data ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    let data = [...mockTransactions];
+    let data = [...transactions];
 
     // Quick tab
     if (quickTab !== 'all') {
@@ -764,16 +779,16 @@ export default function TransactionsPage() {
     });
 
     return data;
-  }, [search, statusFilter, gatewayFilter, methodFilter, amountMin, amountMax, dateFrom, dateTo, quickTab, sortField, sortDir]);
+  }, [transactions, search, statusFilter, gatewayFilter, methodFilter, amountMin, amountMax, dateFrom, dateTo, quickTab, sortField, sortDir]);
 
   // ── tab counts ────────────────────────────────────────────────────────────
   const tabCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: mockTransactions.length };
-    mockTransactions.forEach((t) => {
+    const counts: Record<string, number> = { all: transactions.length };
+    transactions.forEach((t) => {
       counts[t.status] = (counts[t.status] ?? 0) + 1;
     });
     return counts;
-  }, []);
+  }, [transactions]);
 
   // ── paginated slice ───────────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -852,6 +867,7 @@ export default function TransactionsPage() {
 
   const handleRefresh = () => {
     setRefreshSpin(true);
+    setFetchTick((t) => t + 1);
     setTimeout(() => setRefreshSpin(false), 900);
   };
 
@@ -1302,6 +1318,7 @@ export default function TransactionsPage() {
       <ExportModal
         open={exportOpen}
         onClose={() => setExportOpen(false)}
+        totalCount={transactions.length}
         filteredCount={filtered.length}
         selectedCount={selected.size}
       />

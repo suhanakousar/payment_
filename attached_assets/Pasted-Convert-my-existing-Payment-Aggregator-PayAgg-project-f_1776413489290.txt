@@ -1,0 +1,207 @@
+Convert my existing Payment Aggregator (PayAgg) project from mock-based system to a fully working production-ready application.
+
+IMPORTANT:
+- Do NOT rebuild from scratch
+- Modify existing codebase
+- Replace all mock logic with real implementations
+- Maintain current structure and UI
+
+--------------------------------------------------
+
+1. DATABASE INTEGRATION (PRISMA)
+
+- Replace all mock data usage with Prisma database queries
+- Use existing schema for:
+  - Users
+  - Merchants
+  - Transactions
+  - Payouts
+- Add new models:
+  - Dispute
+  - Chargeback
+
+Ensure:
+- Proper relations between tables
+- Use transactionId for linking
+- Add createdAt and updatedAt timestamps
+
+--------------------------------------------------
+
+2. AUTHENTICATION (REAL IMPLEMENTATION)
+
+Replace mock auth with real system:
+
+- Hash passwords using bcrypt
+- Generate JWT tokens (access + refresh)
+- Create middleware to protect APIs
+- Store user session securely
+
+Endpoints:
+- POST /api/v1/auth/register
+- POST /api/v1/auth/login
+
+--------------------------------------------------
+
+3. PAYMENT INTEGRATION (RAZORPAY)
+
+Integrate real payment processing using :contentReference[oaicite:0]{index=0}
+
+Backend:
+- Create Razorpay order
+- Store orderId in database
+- Return payment details
+
+Frontend:
+- Use custom branded UI (white-label)
+- Trigger Razorpay checkout internally
+
+IMPORTANT:
+- Do NOT expose Razorpay name in UI
+
+--------------------------------------------------
+
+4. WEBHOOK SYSTEM
+
+Create endpoint:
+POST /api/v1/webhooks/razorpay
+
+Implement:
+- Verify Razorpay signature
+- Parse webhook event
+- Update transaction status:
+  - success → CAPTURED
+  - failure → FAILED
+
+Log webhook events in database
+
+--------------------------------------------------
+
+5. TRANSACTION SYSTEM
+
+Make transaction lifecycle real:
+
+- Create transaction on payment initiation
+- Update status via webhook
+- Store:
+  - amount
+  - status
+  - customer info
+  - timestamps
+
+--------------------------------------------------
+
+6. DISPUTE SYSTEM (REAL IMPLEMENTATION)
+
+Purpose:
+- Handle failed payment, refund requests, complaints
+
+Backend logic:
+- Create dispute linked to transaction
+- Prevent duplicate disputes
+- Allow status updates
+
+Statuses:
+- PENDING
+- UNDER_REVIEW
+- RESOLVED
+
+Endpoints:
+- POST /api/v1/disputes
+- GET /api/v1/disputes
+- PATCH /api/v1/disputes/:id
+
+--------------------------------------------------
+
+7. CHARGEBACK SYSTEM (REAL IMPLEMENTATION)
+
+Purpose:
+- Final refund decision after dispute
+
+Backend logic:
+- Create chargeback from dispute
+- Add deadline (7–15 days)
+- Allow accept/reject actions
+- Auto-expire after deadline
+
+Statuses:
+- PENDING
+- ACCEPTED
+- REJECTED
+- COMPLETED
+- EXPIRED
+
+On ACCEPT:
+- Update transaction → REFUNDED
+
+Endpoints:
+- POST /api/v1/chargebacks
+- GET /api/v1/chargebacks
+- PATCH /api/v1/chargebacks/:id
+
+--------------------------------------------------
+
+8. CRON / BACKGROUND JOBS
+
+Implement scheduled job:
+
+- Check expired chargebacks
+- Update status automatically
+
+Use:
+- node-cron or background worker
+
+--------------------------------------------------
+
+9. DASHBOARD DATA (REAL)
+
+Replace all mock dashboard data with real queries:
+
+- Total revenue
+- Transactions count
+- Disputes count
+- Chargebacks count
+- Success rate
+
+--------------------------------------------------
+
+10. SECURITY
+
+Implement:
+
+- Input validation (Zod)
+- Rate limiting
+- API key authentication (if needed)
+- Sanitize inputs
+
+--------------------------------------------------
+
+11. LOGGING & MONITORING
+
+Add:
+
+- Audit logs
+- Webhook logs
+- Error handling
+
+--------------------------------------------------
+
+12. DEPLOYMENT READY
+
+Ensure:
+
+- Environment variables configured
+- Database connection stable
+- API works in production mode
+
+--------------------------------------------------
+
+FINAL GOAL:
+
+Convert system into a fully working white-label payment aggregator with:
+
+- Real payments
+- Real database
+- Dispute management
+- Chargeback system
+- Secure authentication
+- Production-ready architecture

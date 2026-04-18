@@ -198,6 +198,53 @@ export interface RecentActivity {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Dispute types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DisputeReason = 'FAILED_PAYMENT' | 'RETURN' | 'COMPLAINT';
+
+export type DisputeStatus = 'PENDING' | 'UNDER_REVIEW' | 'RESOLVED';
+
+export interface Dispute {
+  id: string;
+  transactionId: string;
+  amount: number;
+  reason: DisputeReason;
+  description?: string;
+  status: DisputeStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chargeback types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ChargebackStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'EXPIRED';
+
+export interface Chargeback {
+  id: string;
+  disputeId: string;
+  transactionId: string;
+  amount: number;
+  status: ChargebackStatus;
+  deadline: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// System performance types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SystemPerformance {
+  successRate: number;
+  failedTransactions: number;
+  avgProcessingTimeMs: number;
+  lastUpdated: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // API Response types
 // ─────────────────────────────────────────────────────────────────────────────
 
