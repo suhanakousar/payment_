@@ -98,12 +98,17 @@ const BUSINESS_CATEGORIES = [
   { value: 'others', label: 'Others' },
 ];
 
-async function syncFirebaseUser(uid: string, email: string, displayName?: string | null) {
+async function syncFirebaseUser(
+  uid: string,
+  email: string,
+  displayName?: string | null,
+  extra?: { businessName?: string; gstin?: string; pan?: string; businessCategory?: string; phone?: string }
+) {
   const res = await fetch('/api/v1/auth/firebase', {
     method:      'POST',
     headers:     { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body:        JSON.stringify({ uid, email, displayName: displayName ?? undefined, provider: 'firebase' }),
+    body:        JSON.stringify({ uid, email, displayName: displayName ?? undefined, provider: 'firebase', ...extra }),
   });
   const data = await res.json();
   if (!res.ok || !data.success) throw new Error(data.error?.message ?? 'Sync failed');
@@ -187,7 +192,13 @@ export default function RegisterPage() {
       const user = credential.user;
       await updateProfile(user, { displayName: fullName });
       await sendEmailVerification(user);
-      await syncFirebaseUser(user.uid, user.email!, fullName);
+      await syncFirebaseUser(user.uid, user.email!, fullName, {
+        businessName:     businessName.trim()   || undefined,
+        gstin:            gstin.trim()          || undefined,
+        pan:              pan.trim()            || undefined,
+        businessCategory: category             || undefined,
+        phone:            phoneNum.trim()       || undefined,
+      });
       router.push('/dashboard');
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? '';

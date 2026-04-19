@@ -5,11 +5,16 @@ import prisma from '@/lib/prisma';
 import { signAccessToken, signRefreshToken } from '@/lib/auth';
 
 const schema = z.object({
-  uid:         z.string(),
-  email:       z.string().email(),
-  displayName: z.string().optional(),
-  photoURL:    z.string().optional(),
-  provider:    z.string().optional(),
+  uid:              z.string(),
+  email:            z.string().email(),
+  displayName:      z.string().optional(),
+  photoURL:         z.string().optional(),
+  provider:         z.string().optional(),
+  businessName:     z.string().optional(),
+  gstin:            z.string().optional(),
+  pan:              z.string().optional(),
+  businessCategory: z.string().optional(),
+  phone:            z.string().optional(),
 });
 
 const meta = () => ({
@@ -43,7 +48,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { uid, email, displayName, provider } = parsed.data;
+  const { uid, email, displayName, businessName, gstin, pan, businessCategory, phone } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
   try {
@@ -55,9 +60,12 @@ export async function POST(req: NextRequest) {
     if (!user) {
       const merchant = await prisma.merchant.create({
         data: {
-          businessName: displayName ?? normalizedEmail.split('@')[0],
-          kycStatus:    'PENDING',
-          tier:         'STARTER',
+          businessName:     businessName ?? displayName ?? normalizedEmail.split('@')[0],
+          gstin:            gstin   || null,
+          pan:              pan     || null,
+          businessCategory: businessCategory || null,
+          kycStatus:        'PENDING',
+          tier:             'STARTER',
         },
       });
 
@@ -66,6 +74,7 @@ export async function POST(req: NextRequest) {
           merchantId:   merchant.id,
           fullName:     displayName ?? normalizedEmail.split('@')[0],
           email:        normalizedEmail,
+          phone:        phone || null,
           passwordHash: `firebase:${uid}`,
           role:         'MERCHANT_ADMIN',
           status:       'ACTIVE',
