@@ -145,6 +145,8 @@ model Merchant {
   businessName       String
   gstin              String?
   pan                String?
+  businessCategory   String?
+  address            String?
   kycStatus          KycStatus   @default(PENDING)
   tier               MerchantTier @default(STARTER)
   dailyPayoutLimit   Decimal     @default(0) @db.Decimal(18, 2)
