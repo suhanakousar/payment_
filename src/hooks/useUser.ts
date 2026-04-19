@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 
 export interface UserProfile {
   id:         string;
@@ -21,7 +22,7 @@ export interface UserProfile {
 }
 
 const fetcher = (url: string) =>
-  fetch(url, { credentials: 'include' }).then(r => r.json()).then(d => d.data ?? null);
+  fetchWithAuth(url).then(r => r.json()).then(d => d.data ?? null);
 
 export function useUser() {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);

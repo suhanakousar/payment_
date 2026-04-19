@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 import {
   User,
   Building2,
@@ -124,7 +125,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/v1/profile', { credentials: 'include' })
+    fetchWithAuth('/api/v1/profile')
       .then(r => r.json())
       .then(d => {
         if (!d.success) { setError('Failed to load profile.'); setLoading(false); return; }
@@ -152,9 +153,8 @@ export default function ProfilePage() {
 
   const handleBizSave = async () => {
     setBizSaving(true);
-    const res = await fetch('/api/v1/profile', {
+    const res = await fetchWithAuth('/api/v1/profile', {
       method: 'PATCH',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bizForm),
     });
@@ -164,9 +164,8 @@ export default function ProfilePage() {
 
   const handlePersonalSave = async () => {
     setPersonalSaving(true);
-    const res = await fetch('/api/v1/profile', {
+    const res = await fetchWithAuth('/api/v1/profile', {
       method: 'PATCH',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fullName: personalForm.fullName, phone: personalForm.phone }),
     });
