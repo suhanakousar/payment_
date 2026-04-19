@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Search, Bell, ChevronDown, User, LogOut, Settings, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
 
 const routeMeta: Record<string, { title: string; crumbs: string[] }> = {
   '/dashboard':                    { title: 'Dashboard',    crumbs: ['Home', 'Dashboard'] },
@@ -34,6 +35,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
   const router   = useRouter();
   const meta     = routeMeta[pathname] ?? { title: 'Dashboard', crumbs: ['Home'] };
+  const { displayName, initials, tierLabel, email } = useUser();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [bellOpen,     setBellOpen]     = useState(false);
@@ -194,14 +196,14 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
               className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white shrink-0"
               style={{ background: 'linear-gradient(135deg, #22D3EE, #A78BFA)' }}
             >
-              MA
+              {initials}
             </div>
             <div className="hidden sm:flex flex-col items-start">
               <span className="text-[12px] font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>
-                Merchant Admin
+                {displayName}
               </span>
               <span className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                Growth Tier
+                {tierLabel}
               </span>
             </div>
             <ChevronDown
@@ -230,17 +232,17 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
                   }}
                 >
                   <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                    Merchant Admin
+                    {displayName}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                    admin@payagg.io
+                    {email}
                   </p>
                   <span
                     className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
                     style={{ background: 'rgba(34,211,238,0.15)', color: 'var(--primary)' }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                    Growth Tier
+                    {tierLabel}
                   </span>
                 </div>
                 <div className="py-1.5">

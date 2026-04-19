@@ -4,8 +4,8 @@ import { NextRequest } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'payagg_dev_secret_change_in_production';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'payagg_refresh_dev_secret';
-const ACCESS_TOKEN_TTL  = '15m';
-const REFRESH_TOKEN_TTL = '7d';
+const ACCESS_TOKEN_TTL  = '7d';
+const REFRESH_TOKEN_TTL = '30d';
 
 export interface JwtPayload {
   userId:     string;

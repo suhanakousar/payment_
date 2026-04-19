@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useUser } from '@/hooks/useUser';
 import {
   LayoutDashboard,
   CreditCard,
@@ -58,6 +59,7 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const { displayName, initials, tierLabel } = useUser();
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith('/dashboard/settings')
   );
@@ -245,17 +247,17 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
             style={{ background: 'linear-gradient(135deg, #22D3EE, #A78BFA)' }}
           >
-            MA
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
             <p
               className="text-[12px] font-semibold truncate leading-none mb-0.5"
               style={{ color: 'var(--text-primary)' }}
             >
-              Merchant Admin
+              {displayName}
             </p>
             <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>
-              Growth Tier
+              {tierLabel}
             </p>
           </div>
           <div
