@@ -4,6 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
+<<<<<<< HEAD
 
 [workflows]
 runButton = "Project"
@@ -37,3 +38,5 @@ externalPort = 80
 
 [userenv.shared]
 JWT_SECRET = "8ac2bd891302809cd1f89bce75c2f863e9c912a05ad3f9ea5ea239539965a4e2"
+=======
+>>>>>>> 0dc7e00 (Update scripts to support running the application on Replit)
