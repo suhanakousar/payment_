@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   KeyRound,
   Plus,
@@ -31,7 +31,7 @@ import {
   ModalBody,
   ModalFooter,
 } from '@/components/ui/modal';
-import { mockApiKeys } from '@/lib/mock-data';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,13 +120,18 @@ function UsageMiniChart() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ApiKeysPage() {
-  // Keys state (extend mock with toggle ability)
-  const [keys, setKeys] = useState<ApiKeyRow[]>(
-    mockApiKeys.map((k) => ({
-      ...k,
-      lastUsedAt: k.lastUsedAt ?? null,
-    })),
-  );
+  const [keys,    setKeys]    = useState<ApiKeyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadKeys = useCallback(() => {
+    setLoading(true);
+    fetchWithAuth('/api/v1/keys')
+      .then(r => r.json())
+      .then(d => { if (d.success) setKeys(d.data ?? []); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadKeys(); }, [loadKeys]);
 
   // Expanded row
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
@@ -159,23 +164,41 @@ export default function ApiKeysPage() {
 
   const handleGenerate = async () => {
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    const prefix = genForm.environment === 'live' ? 'pk_live' : 'pk_test';
-    const skPrefix = genForm.environment === 'live' ? 'sk_live' : 'sk_test';
-    const rand = () => Math.random().toString(36).slice(2, 10);
-    setGeneratedKey({ publicKey: `${prefix}_${rand()}${rand()}`, secretKey: `${skPrefix}_${rand()}${rand()}` });
-    setGenStep('success');
-    setGenerating(false);
+    try {
+      const res = await fetchWithAuth('/api/v1/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name:        genForm.name,
+          scopes:      Array.from(genForm.scopes),
+          environment: genForm.environment,
+          expiration:  genForm.expiration !== 'never' ? genForm.expiration : null,
+        }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setGeneratedKey({ publicKey: d.data.publicKey, secretKey: d.data.secretKey });
+        setGenStep('success');
+        loadKeys();
+      }
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleRevokeConfirm = async () => {
     if (!revokeModal) return;
     setRevoking(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setKeys((prev) => prev.filter((k) => k.id !== revokeModal.id));
-    setRevoking(false);
-    setRevokeModal(null);
-    setRevokeConfirm('');
+    try {
+      const res = await fetchWithAuth(`/api/v1/keys/${revokeModal.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setKeys(prev => prev.filter(k => k.id !== revokeModal.id));
+        setRevokeModal(null);
+        setRevokeConfirm('');
+      }
+    } finally {
+      setRevoking(false);
+    }
   };
 
   const resetGenerateModal = () => {

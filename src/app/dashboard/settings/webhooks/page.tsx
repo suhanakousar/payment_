@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Webhook,
   Shield,
@@ -33,7 +33,7 @@ import {
   ModalBody,
   ModalFooter,
 } from '@/components/ui/modal';
-import { mockWebhookLogs } from '@/lib/mock-data';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,24 +54,26 @@ interface WebhookRow {
   responseSnippet: string;
 }
 
-// ─── Mock delivery history from webhook logs ───────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const DELIVERY_HISTORY: WebhookRow[] = mockWebhookLogs.slice(0, 8).map((log, i) => ({
-  id: log.id,
-  eventType: log.eventType,
-  status: log.processed ? 'Delivered' : 'Failed',
-  responseCode: log.processed ? 200 : 500,
-  latency: 120 + i * 37,
-  timestamp: log.receivedAt,
-  requestSnippet: JSON.stringify(
-    { event: log.eventType, id: log.eventId, timestamp: log.receivedAt },
-    null,
-    2,
-  ),
-  responseSnippet: log.processed
-    ? JSON.stringify({ received: true }, null, 2)
-    : JSON.stringify({ error: 'Internal Server Error' }, null, 2),
-}));
+function mapLogToRow(log: Record<string, unknown>, i: number): WebhookRow {
+  const processed = !!log.processed;
+  return {
+    id:       String(log.id),
+    eventType: String(log.eventType ?? ''),
+    status:   processed ? 'Delivered' : 'Failed',
+    responseCode: processed ? 200 : 500,
+    latency:  120 + i * 37,
+    timestamp: String(log.receivedAt ?? new Date().toISOString()),
+    requestSnippet: JSON.stringify(
+      { event: log.eventType, id: log.eventId, timestamp: log.receivedAt },
+      null, 2,
+    ),
+    responseSnippet: processed
+      ? JSON.stringify({ received: true }, null, 2)
+      : JSON.stringify({ error: 'Internal Server Error' }, null, 2),
+  };
+}
 
 // ─── Event groups ─────────────────────────────────────────────────────────────
 
@@ -124,7 +126,7 @@ function CopyButton({ text }: { text: string }) {
 
 export default function WebhooksPage() {
   // Webhook URL
-  const [webhookUrl, setWebhookUrl] = useState('https://api.merchant.com/webhooks/payagg');
+  const [webhookUrl, setWebhookUrl] = useState('');
   const [urlSaving, setUrlSaving] = useState(false);
   const [urlSaved, setUrlSaved] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
@@ -135,6 +137,27 @@ export default function WebhooksPage() {
   const [regenerateModal, setRegenerateModal] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [secretSuffix, setSecretSuffix] = useState('a9f2');
+
+  // Delivery history
+  const [deliveryHistory, setDeliveryHistory] = useState<WebhookRow[]>([]);
+
+  const loadData = useCallback(() => {
+    fetchWithAuth('/api/v1/setup')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          setWebhookUrl(d.data.webhook?.url ?? '');
+          if (d.data.webhook?.secret) setSecretSuffix(String(d.data.webhook.secret).slice(-4));
+        }
+      });
+    fetchWithAuth('/api/v1/webhooks?perPage=20')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) setDeliveryHistory((d.data ?? []).map(mapLogToRow));
+      });
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   // Events
   const [subscribedEvents, setSubscribedEvents] = useState<Set<string>>(
@@ -158,18 +181,33 @@ export default function WebhooksPage() {
 
   const handleSaveUrl = async () => {
     setUrlSaving(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setUrlSaving(false);
-    setUrlSaved(true);
-    setTimeout(() => setUrlSaved(false), 3000);
+    try {
+      await fetchWithAuth('/api/v1/setup', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookUrl }),
+      });
+      setUrlSaved(true);
+      setTimeout(() => setUrlSaved(false), 3000);
+    } finally {
+      setUrlSaving(false);
+    }
   };
 
   const handleRegenerateSecret = async () => {
     setRegenerating(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSecretSuffix(Math.random().toString(36).slice(2, 6));
-    setRegenerating(false);
-    setRegenerateModal(false);
+    try {
+      const newSecret = `wh_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+      await fetchWithAuth('/api/v1/setup', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookSecret: newSecret }),
+      });
+      setSecretSuffix(newSecret.slice(-4));
+      setRegenerateModal(false);
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const handleSaveEvents = async () => {
@@ -396,7 +434,7 @@ export default function WebhooksPage() {
                 </tr>
               </thead>
               <tbody>
-                {DELIVERY_HISTORY.map((row) => (
+                {deliveryHistory.map((row) => (
                   <>
                     <tr
                       key={row.id}

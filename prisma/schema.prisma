@@ -153,6 +153,12 @@ model Merchant {
   preferredGateway   GatewayName @default(AUTO)
   webhookUrl         String?
   webhookSecret      String?
+  bankAccountNumber  String?
+  bankAccountName    String?
+  bankIfscCode       String?
+  bankName           String?
+  bankBranch         String?
+  settlementSchedule String?     @default("T+1")
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { ShieldAlert, Filter, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
-import { mockChargebacks } from '@/lib/mock-data';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ShieldAlert, RefreshCw, CheckCircle, XCircle, Filter } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,8 +39,19 @@ function getDaysRemaining(deadline: string): number {
 
 export default function ChargebacksPage() {
   const [activeStatus, setActiveStatus] = useState<ChargebackStatus | 'ALL'>('ALL');
-  const [chargebacks, setChargebacks] = useState<Chargeback[]>(mockChargebacks);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [chargebacks, setChargebacks] = useState<Chargeback[]>([]);
+  const [loadingId,   setLoadingId]   = useState<string | null>(null);
+  const [loading,     setLoading]     = useState(true);
+
+  const loadChargebacks = useCallback(() => {
+    setLoading(true);
+    fetchWithAuth('/api/v1/chargebacks?perPage=200')
+      .then(r => r.json())
+      .then(d => { if (d.success) setChargebacks(d.data ?? []); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadChargebacks(); }, [loadChargebacks]);
 
   const now = new Date();
   const resolvedChargebacks = useMemo(() =>
@@ -68,7 +79,7 @@ export default function ChargebacksPage() {
   async function handleAction(id: string, action: 'ACCEPT' | 'REJECT') {
     setLoadingId(id);
     try {
-      const res = await fetch(`/api/v1/chargebacks/${id}`, {
+      const res = await fetchWithAuth(`/api/v1/chargebacks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
@@ -97,10 +108,11 @@ export default function ChargebacksPage() {
           </p>
         </div>
         <button
+          onClick={loadChargebacks}
           className="inline-flex items-center gap-2 text-xs font-semibold transition-colors"
           style={{ color: 'var(--text-secondary)' }}
         >
-          <RefreshCw size={13} />
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           Refresh
         </button>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Building2,
   CheckCircle2,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { maskAccountNumber } from '@/lib/utils';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,15 +33,17 @@ import {
 type AddStep = 'form' | 'penny-drop' | 'success';
 type ScheduleKey = 'T+0' | 'T+1' | 'T+2';
 
-// ─── Static data ─────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const CURRENT_ACCOUNT = {
-  accountNumber: '123456787890',
-  holderName: 'Arjun Retail Solutions Pvt. Ltd.',
-  ifsc: 'HDFC0001234',
-  bankName: 'HDFC Bank',
-  branch: 'Andheri East, Mumbai',
-};
+interface BankData {
+  accountNumber: string | null;
+  accountName:   string | null;
+  ifscCode:      string | null;
+  bankName:      string | null;
+  branch:        string | null;
+  settlement:    string;
+  configured:    boolean;
+}
 
 const SCHEDULE_OPTIONS: { key: ScheduleKey; label: string; badge?: string; disabled?: boolean }[] = [
   { key: 'T+0', label: 'Instant (T+0)', badge: 'Enterprise', disabled: true },
@@ -58,6 +61,16 @@ const IFSC_LOOKUP: Record<string, string> = {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function BankPage() {
+  const [bankData, setBankData] = useState<BankData | null>(null);
+
+  const loadSetup = useCallback(() => {
+    fetchWithAuth('/api/v1/setup')
+      .then(r => r.json())
+      .then(d => { if (d.success) setBankData(d.data.bank); });
+  }, []);
+
+  useEffect(() => { loadSetup(); }, [loadSetup]);
+
   // Add new account flow
   const [showAddForm, setShowAddForm] = useState(false);
   const [addStep, setAddStep] = useState<AddStep>('form');
@@ -85,10 +98,17 @@ export default function BankPage() {
   // Success toast for schedule
   const showScheduleSaved = async () => {
     setScheduleSaving(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setScheduleSaving(false);
-    setScheduleSaved(true);
-    setTimeout(() => setScheduleSaved(false), 3000);
+    try {
+      await fetchWithAuth('/api/v1/setup', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settlementSchedule: schedule }),
+      });
+      setScheduleSaved(true);
+      setTimeout(() => setScheduleSaved(false), 3000);
+    } finally {
+      setScheduleSaving(false);
+    }
   };
 
   // IFSC lookup
@@ -113,9 +133,23 @@ export default function BankPage() {
 
   const handlePennyConfirm = async () => {
     setPennySaving(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setPennySaving(false);
-    setAddStep('success');
+    try {
+      await fetchWithAuth('/api/v1/setup', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bankAccountNumber: newAccount.accountNumber,
+          bankAccountName:   newAccount.holderName,
+          bankIfscCode:      newAccount.ifsc,
+          bankName:          ifscResolved.split('–')[0]?.trim() ?? '',
+          bankBranch:        ifscResolved.split('–')[1]?.trim() ?? '',
+        }),
+      });
+      await loadSetup();
+      setAddStep('success');
+    } finally {
+      setPennySaving(false);
+    }
   };
 
   const resetAddFlow = () => {
@@ -152,11 +186,11 @@ export default function BankPage() {
           {/* Account details */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Account Number', value: maskAccountNumber(CURRENT_ACCOUNT.accountNumber), mono: true },
-              { label: 'Account Holder', value: CURRENT_ACCOUNT.holderName },
-              { label: 'Bank Name', value: CURRENT_ACCOUNT.bankName },
-              { label: 'IFSC Code', value: CURRENT_ACCOUNT.ifsc, mono: true },
-              { label: 'Branch', value: CURRENT_ACCOUNT.branch },
+              { label: 'Account Number', value: bankData?.accountNumber ? maskAccountNumber(bankData.accountNumber) : '—', mono: true },
+              { label: 'Account Holder', value: bankData?.accountName  ?? '—' },
+              { label: 'Bank Name',      value: bankData?.bankName     ?? '—' },
+              { label: 'IFSC Code',      value: bankData?.ifscCode     ?? '—', mono: true },
+              { label: 'Branch',         value: bankData?.branch       ?? '—' },
             ].map(({ label, value, mono }) => (
               <div key={label} className="space-y-1">
                 <p className="text-xs text-slate-400 uppercase tracking-wide font-medium">{label}</p>

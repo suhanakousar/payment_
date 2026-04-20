@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   AreaChart,
   Area,
@@ -33,11 +33,7 @@ import {
 } from 'lucide-react';
 
 import { cn, formatCurrency } from '@/lib/utils';
-import {
-  mockRevenueData,
-  mockPaymentMethodBreakdown,
-  mockGatewayHealth,
-} from '@/lib/mock-data';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 import {
   Card,
   CardHeader,
@@ -65,19 +61,8 @@ const AMBER = '#F59E0B';
 const ROSE = '#F43F5E';
 const SLATE = '#CBD5E1';
 
-// Revenue chart data — derived from mockRevenueData, adding txnCount & movingAvg
-const revenueChartData = mockRevenueData.map((d, i, arr) => {
-  const windowSize = 5;
-  const start = Math.max(0, i - windowSize + 1);
-  const slice = arr.slice(start, i + 1);
-  const movingAvg = Math.round(slice.reduce((s, x) => s + x.revenue, 0) / slice.length);
-  return {
-    date: d.date.slice(5), // "MM-DD"
-    revenue: Math.round(d.revenue / 100),
-    movingAvg: Math.round(movingAvg / 100),
-    txnCount: Math.floor(30 + Math.random() * 60),
-  };
-});
+// Revenue chart — populated dynamically from API
+const EMPTY_REVENUE_CHART: { date: string; revenue: number; movingAvg: number; txnCount: number }[] = [];
 
 // 30-day stacked status data
 function seeded(seed: number, min: number, max: number) {
@@ -106,26 +91,11 @@ const heatmapData = DAYS.map((day, di) =>
   }))
 );
 
-// Gateway performance — enriched from mockGatewayHealth
-const gatewayPerfData = mockGatewayHealth.map((g) => ({
-  name: g.gateway.charAt(0) + g.gateway.slice(1).toLowerCase(),
-  successRate: g.successRate,
-  avgLatency: g.avgLatency,
-}));
+// Gateway and pie data — populated dynamically from API
+type GatewayPerf  = { name: string; successRate: number; avgLatency: number };
+type GatewayTable = { name: string; total: number; successRate: number; avgLatency: number; uptime: string };
+type PieEntry     = { name: string; value: number; amount: number; percentage: number };
 
-const gatewayTableData = [
-  { name: 'Razorpay', total: 4821, successRate: 98.5, avgLatency: 312, uptime: '99.97%' },
-  { name: 'Cashfree', total: 3104, successRate: 97.2, avgLatency: 278, uptime: '99.91%' },
-  { name: 'Stripe', total: 1322, successRate: 89.1, avgLatency: 890, uptime: '98.42%' },
-];
-
-// Payment method pie data
-const pieData = mockPaymentMethodBreakdown.map((m) => ({
-  name: m.method.charAt(0).toUpperCase() + m.method.slice(1),
-  value: m.count,
-  amount: m.amount,
-  percentage: m.percentage,
-}));
 const PIE_COLORS = [INDIGO, VIOLET, TEAL, AMBER];
 
 // Top customers
@@ -151,62 +121,8 @@ const TOTAL_FAILURES = 1247;
 // KPI mini cards data
 // ─────────────────────────────────────────────────────────────────────────────
 
-const kpiData = [
-  {
-    label: 'Gross Volume',
-    value: '₹24,89,450',
-    icon: DollarSign,
-    trend: '+12.5%',
-    up: true,
-    iconBg: 'bg-indigo-50',
-    iconColor: 'text-indigo-600',
-  },
-  {
-    label: 'Net Revenue',
-    value: '₹23,65,000',
-    icon: TrendingUp,
-    trend: '+9.8%',
-    up: true,
-    iconBg: 'bg-violet-50',
-    iconColor: 'text-violet-600',
-  },
-  {
-    label: 'Refund Rate',
-    value: '2.3%',
-    icon: ArrowDownRight,
-    trend: '-0.4%',
-    up: false,
-    iconBg: 'bg-rose-50',
-    iconColor: 'text-rose-500',
-  },
-  {
-    label: 'Avg Txn Value',
-    value: '₹1,997',
-    icon: CreditCard,
-    trend: '+3.2%',
-    up: true,
-    iconBg: 'bg-teal-50',
-    iconColor: 'text-teal-600',
-  },
-  {
-    label: 'Payout Volume',
-    value: '₹12,34,000',
-    icon: ArrowUpRight,
-    trend: '+7.1%',
-    up: true,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-  },
-  {
-    label: 'Settlement Pending',
-    value: '₹3,21,000',
-    icon: Clock,
-    trend: '+1.3%',
-    up: false,
-    iconBg: 'bg-slate-50',
-    iconColor: 'text-slate-500',
-  },
-];
+// KPI shape — filled dynamically in component
+type KpiCard = { label: string; value: string; icon: React.ElementType; trend: string | null; up: boolean; iconBg: string; iconColor: string };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom Tooltips
@@ -309,7 +225,7 @@ function formatHour(h: number): string {
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function KpiCard({ item }: { item: typeof kpiData[0] }) {
+function KpiCard({ item }: { item: KpiCard }) {
   const Icon = item.icon;
   return (
     <Card className="relative overflow-hidden">
@@ -346,6 +262,75 @@ export default function AnalyticsPage() {
   const [activePeriod, setActivePeriod] = useState<Period>('30 Days');
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [heatmapHover, setHeatmapHover] = useState<{ day: string; hour: number; value: number } | null>(null);
+
+  // Real data state
+  const [kpiData,           setKpiData]          = useState<KpiCard[]>([]);
+  const [revenueChartData,  setRevenueChartData] = useState(EMPTY_REVENUE_CHART);
+  const [gatewayPerfData,   setGatewayPerfData]  = useState<GatewayPerf[]>([]);
+  const [gatewayTableData,  setGatewayTableData] = useState<GatewayTable[]>([]);
+  const [pieData,           setPieData]          = useState<PieEntry[]>([]);
+
+  const periodToApi = (p: Period) => p === 'Today' ? '7d' : p === '7 Days' ? '7d' : p === '90 Days' ? '90d' : '30d';
+
+  const loadData = useCallback((period: Period) => {
+    const p = periodToApi(period);
+
+    fetchWithAuth('/api/v1/analytics/dashboard')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        const kpi = d.data.kpi;
+        const avgTxn = kpi.capturedCount > 0 ? kpi.totalRevenue / kpi.capturedCount : 0;
+        const refundRate = kpi.totalTransactions > 0
+          ? ((kpi.refundedCount / kpi.totalTransactions) * 100).toFixed(1) + '%'
+          : '0%';
+        setKpiData([
+          { label: 'Gross Volume',       value: formatCurrency(kpi.totalRevenue),    icon: DollarSign,    trend: kpi.revenueChange ? (kpi.revenueChange > 0 ? '+' : '') + kpi.revenueChange + '%' : null, up: (kpi.revenueChange ?? 0) >= 0, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+          { label: 'Success Rate',        value: kpi.successRate + '%',               icon: TrendingUp,    trend: null, up: true,  iconBg: 'bg-violet-50', iconColor: 'text-violet-600' },
+          { label: 'Refund Rate',         value: refundRate,                          icon: ArrowDownRight,trend: null, up: false, iconBg: 'bg-rose-50',   iconColor: 'text-rose-500' },
+          { label: 'Avg Txn Value',       value: formatCurrency(avgTxn),              icon: CreditCard,    trend: null, up: true,  iconBg: 'bg-teal-50',   iconColor: 'text-teal-600' },
+          { label: 'Settlement Pending',  value: formatCurrency(kpi.pendingPayouts),  icon: Clock,         trend: null, up: false, iconBg: 'bg-slate-50',  iconColor: 'text-slate-500' },
+          { label: 'Total Transactions',  value: String(kpi.totalTransactions),       icon: Users,         trend: null, up: true,  iconBg: 'bg-amber-50',  iconColor: 'text-amber-600' },
+        ]);
+        // Build pie from txn status distribution
+        const dist: { status: string; count: number }[] = d.data.txnStatusDistribution ?? [];
+        const totalTxns = dist.reduce((s: number, x: { count: number }) => s + x.count, 0);
+        if (totalTxns > 0) {
+          setPieData(dist.map((x: { status: string; count: number }, i: number) => ({
+            name: x.status.charAt(0) + x.status.slice(1).toLowerCase(),
+            value: x.count,
+            amount: 0,
+            percentage: parseFloat(((x.count / totalTxns) * 100).toFixed(1)),
+          })).slice(0, 4));
+        }
+      });
+
+    fetchWithAuth(`/api/v1/analytics/revenue?period=${p}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        const pts: { date: string; revenue: number }[] = d.data.data_points ?? [];
+        const arr = pts.map((pt, i, all) => {
+          const windowSize = 5;
+          const start = Math.max(0, i - windowSize + 1);
+          const slice = all.slice(start, i + 1);
+          const movingAvg = Math.round(slice.reduce((s, x) => s + x.revenue, 0) / slice.length / 100);
+          return { date: pt.date.slice(5), revenue: Math.round(pt.revenue / 100), movingAvg, txnCount: 0 };
+        });
+        setRevenueChartData(arr);
+      });
+
+    fetchWithAuth('/api/v1/analytics/gateway-health')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        const gws: { gateway: string; successRate: number; avgLatency: number; totalTransactions: number; uptime7d: number }[] = d.data ?? [];
+        setGatewayPerfData(gws.map(g => ({ name: g.gateway.charAt(0) + g.gateway.slice(1).toLowerCase(), successRate: g.successRate, avgLatency: g.avgLatency })));
+        setGatewayTableData(gws.map(g => ({ name: g.gateway.charAt(0) + g.gateway.slice(1).toLowerCase(), total: g.totalTransactions, successRate: g.successRate, avgLatency: g.avgLatency, uptime: g.uptime7d.toFixed(2) + '%' })));
+      });
+  }, []);
+
+  useEffect(() => { loadData(activePeriod); }, [loadData, activePeriod]);
 
   return (
     <div className="space-y-6">
@@ -544,9 +529,9 @@ export default function AnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockPaymentMethodBreakdown.map((m, idx) => (
+                  {pieData.map((m, idx) => (
                     <tr
-                      key={m.method}
+                      key={m.name}
                       className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
                     >
                       <td className="py-2.5 px-1">
@@ -555,11 +540,11 @@ export default function AnalyticsPage() {
                             className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ background: PIE_COLORS[idx % PIE_COLORS.length] }}
                           />
-                          <span className="capitalize font-medium text-slate-700">{m.method}</span>
+                          <span className="capitalize font-medium text-slate-700">{m.name}</span>
                         </span>
                       </td>
-                      <td className="py-2.5 px-1 text-right text-slate-600">{m.count.toLocaleString('en-IN')}</td>
-                      <td className="py-2.5 px-1 text-right text-slate-600">{formatCurrency(m.amount)}</td>
+                      <td className="py-2.5 px-1 text-right text-slate-600">{m.value.toLocaleString('en-IN')}</td>
+                      <td className="py-2.5 px-1 text-right text-slate-600">{m.amount > 0 ? formatCurrency(m.amount) : '—'}</td>
                       <td className="py-2.5 px-1 text-right">
                         <span className="font-semibold text-slate-800">{m.percentage}%</span>
                       </td>
