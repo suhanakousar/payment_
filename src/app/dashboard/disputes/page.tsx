@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { AlertTriangle, RefreshCw, Filter } from 'lucide-react';
-import { fetchWithAuth } from '@/lib/fetch-with-auth';
+import { useState, useMemo } from 'react';
+import { AlertTriangle, Filter } from 'lucide-react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import { cn, formatCurrency } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,18 +50,18 @@ const STAT_CARDS = (stats: { total: number; pending: number; underReview: number
 
 export default function DisputesPage() {
   const [activeStatus, setActiveStatus] = useState<DisputeStatus | 'ALL'>('ALL');
-  const [disputes,  setDisputes]  = useState<Dispute[]>([]);
-  const [loading,   setLoading]   = useState(true);
 
-  const loadDisputes = useCallback(() => {
-    setLoading(true);
-    fetchWithAuth('/api/v1/disputes?perPage=200')
-      .then(r => r.json())
-      .then(d => { if (d.success) setDisputes(d.data ?? []); })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: disputeData, isLoading: loading, isRefreshing, lastUpdated, refresh } = useRealtimeData<Dispute[]>(
+    '/api/v1/disputes?perPage=200',
+    { interval: 10000 }
+  );
+  const disputes = disputeData ?? [];
 
-  useEffect(() => { loadDisputes(); }, [loadDisputes]);
+  useLiveEvents({
+    onEvent: (event) => {
+      if (event.type === 'dispute') refresh();
+    },
+  });
 
   const filtered = useMemo(() => {
     if (activeStatus === 'ALL') return disputes;
@@ -87,14 +89,7 @@ export default function DisputesPage() {
             Track and manage payment dispute cases
           </p>
         </div>
-        <button
-          onClick={loadDisputes}
-          className="inline-flex items-center gap-2 text-xs font-semibold transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+        <RealtimeIndicator isRefreshing={isRefreshing} lastUpdated={lastUpdated} />
       </div>
 
       {/* Stat Cards */}

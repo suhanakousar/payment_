@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import {
   Search,
   Filter,
@@ -655,18 +658,17 @@ function SortIcon({ field, sortField, sortDir }: { field: string; sortField: str
 
 export default function TransactionsPage() {
   // ── remote data ───────────────────────────────────────────────────────────
-  const [transactions,  setTransactions]  = useState<Transaction[]>([]);
-  const [isLoading,     setIsLoading]     = useState(true);
-  const [fetchTick,     setFetchTick]     = useState(0);
+  const { data: txnData, isLoading, isRefreshing, lastUpdated, refresh } = useRealtimeData<Transaction[]>(
+    '/api/v1/transactions?limit=200',
+    { interval: 6000 }
+  );
+  const transactions = txnData ?? [];
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetch('/api/v1/transactions?limit=200', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => { if (json.success) setTransactions(json.data ?? []); })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [fetchTick]);
+  useLiveEvents({
+    onEvent: (event) => {
+      if (event.type === 'transaction') refresh();
+    },
+  });
 
   // ── filter state ──────────────────────────────────────────────────────────
   const [filterOpen,    setFilterOpen]    = useState(false);
@@ -867,7 +869,7 @@ export default function TransactionsPage() {
 
   const handleRefresh = () => {
     setRefreshSpin(true);
-    setFetchTick((t) => t + 1);
+    refresh();
     setTimeout(() => setRefreshSpin(false), 900);
   };
 
@@ -890,8 +892,11 @@ export default function TransactionsPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
-          <p className="text-sm text-slate-500 mt-0.5">View and manage all payment transactions</p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
+            <RealtimeIndicator isRefreshing={isRefreshing} lastUpdated={lastUpdated} />
+          </div>
+          <p className="text-sm text-slate-500">View and manage all payment transactions</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button

@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import Link from 'next/link';
 import {
   DollarSign,
@@ -172,23 +175,26 @@ interface RevenuePoint { date: string; revenue: number; payouts: number; }
 
 export default function DashboardPage() {
   const [activePeriod, setActivePeriod] = useState<Period>('30D');
-  const [apiData, setApiData] = useState<DashboardApiData | null>(null);
-  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
 
-  useEffect(() => {
-    fetch('/api/v1/analytics/dashboard', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => { if (json.success) setApiData(json.data); })
-      .catch(() => {});
-  }, []);
+  const { data: apiData, isRefreshing, lastUpdated, refresh } = useRealtimeData<DashboardApiData>(
+    '/api/v1/analytics/dashboard',
+    { interval: 10000 }
+  );
 
-  useEffect(() => {
-    const period = activePeriod === '7D' ? '7d' : activePeriod === '30D' ? '30d' : '90d';
-    fetch(`/api/v1/analytics/revenue?period=${period}`, { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => { if (json.success) setRevenueData(json.data.data_points ?? []); })
-      .catch(() => {});
-  }, [activePeriod]);
+  const revPeriod = activePeriod === '7D' ? '7d' : activePeriod === '30D' ? '30d' : '90d';
+  const { data: revApiData } = useRealtimeData<{ data_points: RevenuePoint[] }>(
+    `/api/v1/analytics/revenue?period=${revPeriod}`,
+    { interval: 10000 }
+  );
+  const revenueData: RevenuePoint[] = revApiData?.data_points ?? [];
+
+  useLiveEvents({
+    onEvent: (event) => {
+      if (event.type === 'transaction' || event.type === 'payout') {
+        refresh();
+      }
+    },
+  });
 
   const kpi = apiData?.kpi ?? {
     totalRevenue:      0,
@@ -273,13 +279,10 @@ export default function DashboardPage() {
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(52,211,153,0.12)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)' }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-gentle" />
-                Live
-              </span>
+              <RealtimeIndicator
+                isRefreshing={isRefreshing}
+                lastUpdated={lastUpdated}
+              />
               <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }} suppressHydrationWarning>
                 {dateLabel}
               </span>

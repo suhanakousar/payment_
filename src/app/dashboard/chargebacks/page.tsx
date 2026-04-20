@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { ShieldAlert, RefreshCw, CheckCircle, XCircle, Filter } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ShieldAlert, CheckCircle, XCircle, Filter } from 'lucide-react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import { fetchWithAuth } from '@/lib/fetch-with-auth';
 import { formatCurrency } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -39,19 +42,19 @@ function getDaysRemaining(deadline: string): number {
 
 export default function ChargebacksPage() {
   const [activeStatus, setActiveStatus] = useState<ChargebackStatus | 'ALL'>('ALL');
-  const [chargebacks, setChargebacks] = useState<Chargeback[]>([]);
   const [loadingId,   setLoadingId]   = useState<string | null>(null);
-  const [loading,     setLoading]     = useState(true);
 
-  const loadChargebacks = useCallback(() => {
-    setLoading(true);
-    fetchWithAuth('/api/v1/chargebacks?perPage=200')
-      .then(r => r.json())
-      .then(d => { if (d.success) setChargebacks(d.data ?? []); })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: chargebackData, isLoading: loading, isRefreshing, lastUpdated, refresh } = useRealtimeData<Chargeback[]>(
+    '/api/v1/chargebacks?perPage=200',
+    { interval: 10000 }
+  );
+  const chargebacks = chargebackData ?? [];
 
-  useEffect(() => { loadChargebacks(); }, [loadChargebacks]);
+  useLiveEvents({
+    onEvent: (event) => {
+      if (event.type === 'chargeback') refresh();
+    },
+  });
 
   const now = new Date();
   const resolvedChargebacks = useMemo(() =>
@@ -85,8 +88,7 @@ export default function ChargebacksPage() {
         body: JSON.stringify({ action }),
       });
       if (res.ok) {
-        const json = await res.json();
-        setChargebacks((prev) => prev.map((cb) => (cb.id === id ? json.data : cb)));
+        refresh();
       }
     } finally {
       setLoadingId(null);
@@ -107,14 +109,7 @@ export default function ChargebacksPage() {
             Final refund decisions — accept or reject within the deadline
           </p>
         </div>
-        <button
-          onClick={loadChargebacks}
-          className="inline-flex items-center gap-2 text-xs font-semibold transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+        <RealtimeIndicator isRefreshing={isRefreshing} lastUpdated={lastUpdated} />
       </div>
 
       {/* Stat Cards */}

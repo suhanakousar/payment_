@@ -11,6 +11,7 @@ A SaaS-grade multi-gateway payment infrastructure dashboard built with Next.js 1
 - **Webhooks**: Cashfree HMAC-SHA256 + Razorpay signature verification
 - **Cron**: node-cron (instrumentation.ts) — expires overdue chargebacks every 5 minutes
 - **Proxy (auth guard)**: `src/proxy.ts` — Next.js 16 edge proxy using `jose` for JWT verification
+- **Real-time**: SSE endpoint (`/api/v1/events`) pushes new transaction/payout/dispute/chargeback events; all dashboard pages poll every 5–30s via `useRealtimeData` hook; instant refresh triggered by SSE via `useLiveEvents` hook
 - **Styling**: Tailwind CSS v4, Obsidian dark theme
 - **UI**: Lucide React, Framer Motion, Recharts, TanStack Table
 

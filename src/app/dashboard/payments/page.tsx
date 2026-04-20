@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import {
   Plus,
   Search,
@@ -232,15 +235,17 @@ const PAGE_SIZE = 10;
 
 export default function PaymentsPage() {
   // ── Remote data ─────────────────────────────────────────────────────────────
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [fetchTick, setFetchTick] = useState(0);
+  const { data: txnData, isRefreshing, lastUpdated, refresh } = useRealtimeData<Transaction[]>(
+    '/api/v1/transactions?limit=200',
+    { interval: 6000 }
+  );
+  const transactions = txnData ?? [];
 
-  useEffect(() => {
-    fetch('/api/v1/transactions?limit=200', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => { if (json.success) setTransactions(json.data ?? []); })
-      .catch(() => {});
-  }, [fetchTick]);
+  useLiveEvents({
+    onEvent: (event) => {
+      if (event.type === 'transaction') refresh();
+    },
+  });
 
   // ── Filter state ────────────────────────────────────────────────────────────
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -331,7 +336,7 @@ export default function PaymentsPage() {
       if (json.success) {
         setGeneratedLink(json.data.payment_url ?? `${window.location.origin}/checkout/${json.data.transaction_id}`);
         setModalStep('success');
-        setFetchTick((t) => t + 1);
+        refresh();
       } else {
         setModalStep('form');
         alert(json.error?.message ?? 'Failed to create payment');
@@ -359,8 +364,11 @@ export default function PaymentsPage() {
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payments</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Create and manage payment links</p>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payments</h1>
+              <RealtimeIndicator isRefreshing={isRefreshing} lastUpdated={lastUpdated} />
+            </div>
+            <p className="text-sm text-slate-500">Create and manage payment links</p>
           </div>
           <Button
             variant="primary"

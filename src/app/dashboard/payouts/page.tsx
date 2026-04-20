@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useLiveEvents } from '@/hooks/useLiveEvents';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import {
   Send,
   Upload,
@@ -955,15 +958,17 @@ function PayoutDetailModal({
 
 export default function PayoutsPage() {
   // ── Remote data ───────────────────────────────────────────────────────────
-  const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [fetchTick, setFetchTick] = useState(0);
+  const { data: payoutData, isRefreshing, lastUpdated, refresh } = useRealtimeData<Payout[]>(
+    '/api/v1/payouts?limit=200',
+    { interval: 8000 }
+  );
+  const payouts = payoutData ?? [];
 
-  useEffect(() => {
-    fetch('/api/v1/payouts?limit=200', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((json) => { if (json.success) setPayouts(json.data ?? []); })
-      .catch(() => {});
-  }, [fetchTick]);
+  useLiveEvents({
+    onEvent: (event) => {
+      if (event.type === 'payout') refresh();
+    },
+  });
 
   const [activeTab, setActiveTab] = useState<TabId>('all');
   const [statusFilter, setStatusFilter] = useState<PayoutStatus>('ALL');
@@ -1020,8 +1025,11 @@ export default function PayoutsPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payouts</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Disburse payments to vendors and beneficiaries</p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payouts</h1>
+            <RealtimeIndicator isRefreshing={isRefreshing} lastUpdated={lastUpdated} />
+          </div>
+          <p className="text-sm text-slate-500">Disburse payments to vendors and beneficiaries</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -1352,7 +1360,7 @@ export default function PayoutsPage() {
       <SinglePayoutModal
         open={showSingleModal}
         onClose={() => setShowSingleModal(false)}
-        onSuccess={() => setFetchTick((t) => t + 1)}
+        onSuccess={() => refresh()}
       />
       <BulkUploadModal
         open={showBulkModal}

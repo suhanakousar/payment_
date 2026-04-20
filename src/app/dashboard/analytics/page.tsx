@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { RealtimeIndicator } from '@/components/ui/realtime-indicator';
 import {
   AreaChart,
   Area,
@@ -330,7 +331,22 @@ export default function AnalyticsPage() {
       });
   }, []);
 
-  useEffect(() => { loadData(activePeriod); }, [loadData, activePeriod]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const isFirstLoad = useRef(true);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!isFirstLoad.current) setIsRefreshing(true);
+      await loadData(activePeriod);
+      setLastUpdated(new Date());
+      setIsRefreshing(false);
+      isFirstLoad.current = false;
+    };
+    run();
+    const timer = setInterval(run, 30000);
+    return () => clearInterval(timer);
+  }, [loadData, activePeriod]);
 
   return (
     <div className="space-y-6">
@@ -346,6 +362,7 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <RealtimeIndicator isRefreshing={isRefreshing} lastUpdated={lastUpdated} />
           {/* Period selector */}
           <div className="flex items-center bg-slate-100 rounded-full p-1 gap-0.5">
             {PERIODS.map((p) => (
