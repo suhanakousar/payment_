@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { getAuthUser, isDevBypass } from '@/lib/auth';
+import { createCashfreeOrder, cashfreeCheckoutUrl } from '@/lib/cashfree';
 
 const meta = () => ({ request_id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString() });
 
@@ -139,11 +140,51 @@ export async function POST(req: NextRequest) {
     let paymentUrl: string;
     let selectedGateway = gateway_preference;
 
-    // Try Razorpay if keys are configured
+    // Look up merchant gateway config
+    const merchantConfig = merchantId
+      ? await prisma.merchantConfig.findUnique({ where: { merchantId } }).catch(() => null)
+      : null;
+
+    const cashfreeAppId     = merchantConfig?.cashfreeAppId;
+    const cashfreeSecretKey = merchantConfig?.cashfreeSecretKey;
     const razorpayKeyId     = process.env.RAZORPAY_KEY_ID;
     const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    if (razorpayKeyId && razorpayKeySecret && (gateway_preference === 'RAZORPAY' || gateway_preference === 'AUTO')) {
+    const wantsCashfree = gateway_preference === 'CASHFREE' ||
+      (gateway_preference === 'AUTO' && !!(cashfreeAppId && cashfreeSecretKey));
+
+    if (cashfreeAppId && cashfreeSecretKey && wantsCashfree) {
+      // ── Cashfree ───────────────────────────────────────────────────────────
+      try {
+        const cfOrderId = `payagg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const order = await createCashfreeOrder(cashfreeAppId, cashfreeSecretKey, {
+          order_id:       cfOrderId,
+          order_amount:   amount / 100,
+          order_currency: currency,
+          customer_details: {
+            customer_id:    customer.email ?? customer.phone ?? `cust_${Date.now()}`,
+            customer_email: customer.email,
+            customer_phone: customer.phone,
+            customer_name:  customer.name,
+          },
+          order_meta: {
+            return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? `https://${req.headers.get('host')}`}/checkout/${cfOrderId}?status=success`,
+            notify_url: `${process.env.NEXT_PUBLIC_APP_URL ?? `https://${req.headers.get('host')}`}/api/v1/webhooks/cashfree`,
+          },
+        });
+        gatewayOrderId  = order.order_id;
+        selectedGateway = 'CASHFREE';
+        paymentUrl = cashfreeCheckoutUrl(order.payment_session_id);
+        if (metadata === undefined) metadata = {};
+        (metadata as Record<string, unknown>).payment_session_id = order.payment_session_id;
+        (metadata as Record<string, unknown>).cf_order_id        = order.cf_order_id;
+      } catch (cfErr) {
+        console.error('[cashfree order create]', cfErr);
+        gatewayOrderId = `sim_cf_${Date.now()}`;
+        paymentUrl = `/checkout/${gatewayOrderId}`;
+      }
+    } else if (razorpayKeyId && razorpayKeySecret && (gateway_preference === 'RAZORPAY' || gateway_preference === 'AUTO')) {
+      // ── Razorpay ───────────────────────────────────────────────────────────
       try {
         const Razorpay = (await import('razorpay')).default;
         const rzp = new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
@@ -162,6 +203,7 @@ export async function POST(req: NextRequest) {
         paymentUrl = `/checkout/sim_${Date.now()}`;
       }
     } else {
+      // ── Simulation fallback ────────────────────────────────────────────────
       gatewayOrderId = `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       paymentUrl = `/checkout/${gatewayOrderId}`;
     }

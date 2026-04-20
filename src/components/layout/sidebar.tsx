@@ -46,6 +46,7 @@ const navItems: NavItem[] = [
     children: [
       { label: 'Profile',      href: '/dashboard/settings/profile',  icon: User },
       { label: 'Bank Account', href: '/dashboard/settings/bank',     icon: Building2 },
+      { label: 'Gateway',      href: '/dashboard/settings/gateway',  icon: Zap },
       { label: 'Webhooks',     href: '/dashboard/settings/webhooks', icon: Webhook },
       { label: 'API Keys',     href: '/dashboard/settings/api-keys', icon: KeyRound },
     ],
